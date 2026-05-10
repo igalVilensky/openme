@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: openme-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openme
+      POSTGRES_PASSWORD: openme
+      POSTGRES_DB: openme_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - openme_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  openme_postgres_data:
