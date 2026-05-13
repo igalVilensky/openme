@@ -29,7 +29,7 @@ export default function DashboardPage() {
             OpenMe
           </Link>
           <Link
-            href="/@demo"
+            href="/demo"
             className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
           >
             Public profile

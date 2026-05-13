@@ -13,6 +13,18 @@ Users can create a public profile with personal interaction endpoints such as:
 - POST /challenge-me
 - POST /recommend
 
+Public profiles use clean username URLs:
+
+- /[username]
+- /[username]/[endpointSlug]
+
+Examples:
+
+- /igal
+- /igal/collaborate
+- /demo
+- /demo/collaborate
+
 The core idea:
 
 Links show where someone is.

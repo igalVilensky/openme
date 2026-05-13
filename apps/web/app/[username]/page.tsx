@@ -1,19 +1,17 @@
 import Link from "next/link";
 
+import { formatHandle, normalizeUsernameSlug } from "@/lib/username";
+
 type ProfilePageProps = {
   params: Promise<{
     username: string;
   }>;
 };
 
-function formatHandle(segment: string): string {
-  const username = decodeURIComponent(segment);
-  return username.startsWith("@") ? username : `@${username}`;
-}
-
 export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
-  const handle = formatHandle(username);
+  const usernameSlug = normalizeUsernameSlug(username);
+  const handle = formatHandle(usernameSlug);
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
@@ -52,7 +50,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <Link
-                href={`/${handle}/now`}
+                href={`/${usernameSlug}/now`}
                 className="rounded-md border border-[var(--line)] p-4 transition hover:border-[var(--ink-blue)]"
               >
                 <p className="text-xs font-semibold text-[var(--ink-blue)]">
@@ -61,7 +59,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 <p className="mt-2 font-mono text-sm">/now</p>
               </Link>
               <Link
-                href={`/${handle}/collaborate`}
+                href={`/${usernameSlug}/collaborate`}
                 className="rounded-md border border-[var(--line)] p-4 transition hover:border-[var(--accent)]"
               >
                 <p className="text-xs font-semibold text-[var(--accent)]">
@@ -70,7 +68,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 <p className="mt-2 font-mono text-sm">/collaborate</p>
               </Link>
               <Link
-                href={`/${handle}/ask-me`}
+                href={`/${usernameSlug}/ask-me`}
                 className="rounded-md border border-[var(--line)] p-4 transition hover:border-[var(--signal)]"
               >
                 <p className="text-xs font-semibold text-[var(--signal)]">

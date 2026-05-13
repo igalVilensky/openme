@@ -16,7 +16,7 @@ export default function HomePage() {
           </Link>
           <nav className="flex items-center gap-2 text-sm text-[var(--muted)]">
             <Link
-              href="/@demo"
+              href="/demo"
               className="rounded-md px-3 py-2 transition hover:bg-white"
             >
               Public profile
@@ -44,13 +44,13 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/@demo"
+                href="/demo"
                 className="rounded-md bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white transition hover:bg-[var(--accent-strong)]"
               >
                 View sample profile
               </Link>
               <Link
-                href="/@demo/collaborate"
+                href="/demo/collaborate"
                 className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm font-medium transition hover:border-[var(--accent)]"
               >
                 Open sample endpoint

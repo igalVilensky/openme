@@ -1,16 +1,13 @@
 import Link from "next/link";
 
+import { formatHandle, normalizeUsernameSlug } from "@/lib/username";
+
 type EndpointPageProps = {
   params: Promise<{
     username: string;
     endpointSlug: string;
   }>;
 };
-
-function formatHandle(segment: string): string {
-  const username = decodeURIComponent(segment);
-  return username.startsWith("@") ? username : `@${username}`;
-}
 
 function formatSlug(segment: string): string {
   return decodeURIComponent(segment);
@@ -24,7 +21,8 @@ export default async function PublicEndpointPage({
   params
 }: EndpointPageProps) {
   const { username, endpointSlug } = await params;
-  const handle = formatHandle(username);
+  const usernameSlug = normalizeUsernameSlug(username);
+  const handle = formatHandle(usernameSlug);
   const slug = formatSlug(endpointSlug);
   const method = inferMethod(slug);
 
@@ -32,7 +30,7 @@ export default async function PublicEndpointPage({
     <main className="min-h-screen px-5 py-6 sm:px-8">
       <div className="mx-auto w-full max-w-3xl">
         <header className="flex items-center justify-between gap-4 border-b border-[var(--line)] pb-4">
-          <Link href={`/${handle}`} className="text-base font-semibold">
+          <Link href={`/${usernameSlug}`} className="text-base font-semibold">
             {handle}
           </Link>
           <Link
