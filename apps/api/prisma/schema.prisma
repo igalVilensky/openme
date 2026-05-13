@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -71,14 +72,20 @@ model User {
 }
 
 model Profile {
-  id          String   @id @default(cuid())
-  userId      String   @unique @map("user_id")
-  username    String   @unique
-  displayName String?  @map("display_name")
-  bio         String?
-  avatarUrl   String?  @map("avatar_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  userId       String   @unique @map("user_id")
+  username     String   @unique
+  displayName  String?  @map("display_name")
+  headline     String?
+  bio          String?
+  location     String?
+  languages    String[] @default([])
+  status       String?
+  currentFocus String?  @map("current_focus")
+  avatarUrl    String?  @map("avatar_url")
+  isPublic     Boolean  @default(false) @map("is_public")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   links     Link[]
@@ -112,6 +119,7 @@ model Endpoint {
   description String?
   visibility  EndpointVisibility @default(PUBLIC)
   status      EndpointStatus     @default(DRAFT)
+  position    Int                @default(0)
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @updatedAt @map("updated_at")
 
