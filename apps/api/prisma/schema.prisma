@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EndpointMethod {
+  GET
+  POST
+}
+
+enum EndpointVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum EndpointStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum FieldType {
+  SHORT_TEXT
+  LONG_TEXT
+  EMAIL
+  URL
+  SELECT
+  MULTI_SELECT
+  RATING
+  DATE
+}
+
+enum SubmissionStatus {
+  NEW
+  REVIEWED
+  REPLIED
+  ARCHIVED
+  BLOCKED
+}
+
+enum BoundaryStatus {
+  FITS
+  UNCLEAR
+  VIOLATES
+  NEEDS_REVIEW
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?  @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile Profile?
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  username    String   @unique
+  displayName String?  @map("display_name")
+  bio         String?
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links     Link[]
+  endpoints Endpoint[]
+
+  @@map("profiles")
+}
+
+model Link {
+  id        String   @id @default(cuid())
+  profileId String   @map("profile_id")
+  title     String
+  url       String
+  position  Int      @default(0)
+  isVisible Boolean  @default(true) @map("is_visible")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("links")
+}
+
+model Endpoint {
+  id          String             @id @default(cuid())
+  profileId   String             @map("profile_id")
+  slug        String
+  method      EndpointMethod     @default(POST)
+  title       String
+  description String?
+  visibility  EndpointVisibility @default(PUBLIC)
+  status      EndpointStatus     @default(DRAFT)
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  profile     Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  fields      EndpointField[]
+  boundaries  EndpointBoundary[]
+  submissions Submission[]
+
+  @@unique([profileId, slug])
+  @@index([profileId])
+  @@map("endpoints")
+}
+
+model EndpointField {
+  id          String    @id @default(cuid())
+  endpointId  String    @map("endpoint_id")
+  type        FieldType
+  label       String
+  helpText    String?   @map("help_text")
+  placeholder String?
+  options     Json?
+  required    Boolean   @default(false)
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  endpoint Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId])
+  @@map("endpoint_fields")
+}
+
+model EndpointBoundary {
+  id          String   @id @default(cuid())
+  endpointId  String   @map("endpoint_id")
+  title       String
+  description String
+  priority    Priority @default(MEDIUM)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  endpoint Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId])
+  @@map("endpoint_boundaries")
+}
+
+model Submission {
+  id             String           @id @default(cuid())
+  endpointId     String           @map("endpoint_id")
+  status         SubmissionStatus @default(NEW)
+  submitterName  String?          @map("submitter_name")
+  submitterEmail String?          @map("submitter_email")
+  data           Json
+  message        String?
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  endpoint Endpoint            @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  analysis SubmissionAnalysis?
+
+  @@index([endpointId])
+  @@index([status])
+  @@map("submissions")
+}
+
+model SubmissionAnalysis {
+  id             String         @id @default(cuid())
+  submissionId   String         @unique @map("submission_id")
+  summary        String?
+  intent         String?
+  boundaryStatus BoundaryStatus @default(NEEDS_REVIEW) @map("boundary_status")
+  priority       Priority       @default(MEDIUM)
+  suggestedReply String?        @map("suggested_reply")
+  raw            Json?
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("submission_analysis")
+}

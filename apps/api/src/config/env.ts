@@ -34,8 +34,13 @@ function parseCorsOrigins(value: string | undefined): string | string[] {
   return process.env.WEB_URL ?? "http://localhost:3000";
 }
 
+function parseDatabaseUrl(value: string | undefined): string {
+  return value ?? "postgresql://openme:openme@localhost:5432/openme_dev";
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: parsePort(process.env.PORT),
-  corsOrigin: parseCorsOrigins(process.env.CORS_ORIGIN)
+  corsOrigin: parseCorsOrigins(process.env.CORS_ORIGIN),
+  databaseUrl: parseDatabaseUrl(process.env.DATABASE_URL)
 } as const;
