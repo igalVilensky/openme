@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import path from "node:path";
 
 import {
+  FieldType,
   EndpointMethod,
   EndpointStatus,
   EndpointVisibility,
@@ -146,6 +147,84 @@ async function main() {
       id: true,
       slug: true
     }
+  });
+
+  const endpointBySlug = new Map(
+    endpoints.map((endpoint) => [endpoint.slug, endpoint])
+  );
+
+  function requireEndpoint(slug: string) {
+    const endpoint = endpointBySlug.get(slug);
+
+    if (!endpoint) {
+      throw new Error(`Missing seeded endpoint: ${slug}`);
+    }
+
+    return endpoint;
+  }
+
+  const collaborateEndpoint = requireEndpoint("collaborate");
+  const askMeEndpoint = requireEndpoint("ask-me");
+  const feedbackEndpoint = requireEndpoint("feedback");
+
+  await prisma.endpointField.createMany({
+    data: [
+      {
+        endpointId: collaborateEndpoint.id,
+        type: FieldType.LONG_TEXT,
+        label: "What do you want to build?",
+        placeholder: "Describe the project, problem, or collaboration idea.",
+        required: true,
+        position: 0
+      },
+      {
+        endpointId: collaborateEndpoint.id,
+        type: FieldType.LONG_TEXT,
+        label: "Why do you think I am relevant?",
+        placeholder: "Share the context that made you reach out.",
+        required: true,
+        position: 1
+      },
+      {
+        endpointId: collaborateEndpoint.id,
+        type: FieldType.SELECT,
+        label: "Is this paid, open-source, experimental, or just an idea?",
+        options: ["Paid", "Open-source", "Experimental", "Just an idea"],
+        required: true,
+        position: 2
+      },
+      {
+        endpointId: collaborateEndpoint.id,
+        type: FieldType.EMAIL,
+        label: "Your email",
+        placeholder: "name@example.com",
+        required: false,
+        position: 3
+      },
+      {
+        endpointId: askMeEndpoint.id,
+        type: FieldType.LONG_TEXT,
+        label: "Your question",
+        placeholder: "Ask a thoughtful question.",
+        required: true,
+        position: 0
+      },
+      {
+        endpointId: feedbackEndpoint.id,
+        type: FieldType.LONG_TEXT,
+        label: "Feedback",
+        placeholder: "Share what worked, what did not, or what could improve.",
+        required: true,
+        position: 0
+      },
+      {
+        endpointId: feedbackEndpoint.id,
+        type: FieldType.RATING,
+        label: "Rating",
+        required: false,
+        position: 1
+      }
+    ]
   });
 
   await prisma.endpointBoundary.createMany({

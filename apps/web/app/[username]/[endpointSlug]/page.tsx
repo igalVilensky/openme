@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ApiClientError, apiClient } from "@/lib/api-client";
 import { formatHandle, normalizeUsernameSlug } from "@/lib/username";
+import { PublicEndpointForm } from "./submission-form";
 
 type EndpointPageProps = {
   params: Promise<{
@@ -409,9 +410,17 @@ export default async function PublicEndpointPage({
 
             <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
               <section>
-                <h2 className="text-sm font-semibold">Fields</h2>
+                <h2 className="text-sm font-semibold">
+                  {endpoint.method === "POST" ? "Submit" : "Fields"}
+                </h2>
                 <div className="mt-3 space-y-3">
-                  {endpoint.fields.length ? (
+                  {endpoint.method === "POST" ? (
+                    <PublicEndpointForm
+                      endpointSlug={endpoint.slug}
+                      fields={endpoint.fields}
+                      username={profile.username}
+                    />
+                  ) : endpoint.fields.length ? (
                     endpoint.fields.map((field) => (
                       <EndpointField key={field.id} field={field} />
                     ))
