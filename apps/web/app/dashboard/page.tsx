@@ -6,17 +6,20 @@ const dashboardItems = [
   {
     label: "Profile",
     value: "Draft",
-    detail: "Public profile setup"
+    detail: "Public profile setup",
+    href: "/demo"
   },
   {
     label: "Endpoints",
     value: "0",
-    detail: "Endpoint builder arrives later"
+    detail: "Endpoint builder arrives later",
+    href: "/demo/collaborate"
   },
   {
     label: "Inbox",
-    value: "Empty",
-    detail: "Submissions arrive later"
+    value: "Open",
+    detail: "Review demo submissions",
+    href: "/dashboard/inbox"
   }
 ];
 
@@ -53,8 +56,9 @@ export default function DashboardPage() {
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {dashboardItems.map((item) => (
-              <div
+              <Link
                 key={item.label}
+                href={item.href}
                 className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
               >
                 <p className="text-sm font-medium text-[var(--muted)]">
@@ -64,7 +68,7 @@ export default function DashboardPage() {
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
                   {item.detail}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
 
