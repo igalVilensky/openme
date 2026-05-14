@@ -194,14 +194,6 @@ async function main() {
         position: 2
       },
       {
-        endpointId: collaborateEndpoint.id,
-        type: FieldType.EMAIL,
-        label: "Your email",
-        placeholder: "name@example.com",
-        required: false,
-        position: 3
-      },
-      {
         endpointId: askMeEndpoint.id,
         type: FieldType.LONG_TEXT,
         label: "Your question",
