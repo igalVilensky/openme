@@ -1,0 +1,117 @@
+# Runtime Flow
+
+This document describes the current MVP runtime path for public submissions and AI analysis.
+
+## Public Submission Flow
+
+```text
+apps/web -> apps/api -> PostgreSQL -> apps/ai-service -> Groq/mock -> PostgreSQL -> inbox
+```
+
+Step by step:
+
+1. A visitor opens a public endpoint page in `apps/web`, such as `/demo/collaborate`.
+2. `apps/web` fetches endpoint configuration from `apps/api`.
+3. The visitor submits the form.
+4. `apps/web` posts the submission to `apps/api`.
+5. `apps/api` validates the payload against the endpoint fields.
+6. `apps/api` writes a `Submission` row to PostgreSQL.
+7. If `AI_ENABLED=true`, `apps/api` sends analysis input to `apps/ai-service`.
+8. `apps/ai-service` analyzes with the configured provider.
+9. `apps/api` stores the result in `SubmissionAnalysis`.
+10. The dashboard inbox reads submissions and analysis from PostgreSQL.
+
+## When AI_ENABLED=false
+
+When `AI_ENABLED=false`, `apps/api` does not call `apps/ai-service`.
+
+The submission flow is:
+
+```text
+apps/web -> apps/api -> PostgreSQL -> inbox
+```
+
+The submission is stored and appears in the inbox without analysis.
+
+## When AI Service Fails
+
+Submission creation is the primary user action. AI analysis is secondary.
+
+If the AI service is offline, returns an error, times out, or returns invalid data:
+
+- `apps/api` logs the failure.
+- `apps/api` does not roll back the submission.
+- The public form still returns success.
+- The inbox still shows the submission.
+- `SubmissionAnalysis` may be missing for that submission.
+
+AI analysis is currently fire-and-forget, so even successful analysis can briefly be pending.
+
+## Provider Behavior
+
+`apps/ai-service` supports two providers:
+
+- `mock`: deterministic local analysis, default mode, no paid API calls
+- `groq`: Groq chat completions API, enabled only when `AI_PROVIDER=groq` and `GROQ_API_KEY` is configured
+
+If Groq mode is configured but Groq fails or returns invalid output, `apps/ai-service` falls back to mock analysis.
+
+## What Is Stored in Submission
+
+`Submission` stores the visitor-submitted record:
+
+- `id`
+- `endpointId`
+- `status`
+- `submitterName`
+- `submitterEmail`
+- `data`
+- `message`
+- `createdAt`
+- `updatedAt`
+
+`data` contains answers keyed by endpoint field ID.
+
+## What Is Stored in SubmissionAnalysis
+
+`SubmissionAnalysis` stores the structured analysis for one submission:
+
+- `id`
+- `submissionId`
+- `summary`
+- `intent`
+- `boundaryStatus`
+- `priority`
+- `suggestedReply`
+- `raw`
+- `createdAt`
+- `updatedAt`
+
+Allowed `boundaryStatus` values:
+
+```text
+FITS
+UNCLEAR
+VIOLATES
+NEEDS_REVIEW
+```
+
+Allowed `priority` values:
+
+```text
+LOW
+MEDIUM
+HIGH
+URGENT
+```
+
+The `raw` field currently stores the returned structured analysis payload for debugging and future audit use.
+
+## Service Boundaries
+
+- `apps/web` calls `apps/api`.
+- `apps/web` never calls `apps/ai-service`.
+- `apps/web` never sees `GROQ_API_KEY`.
+- `apps/api` calls `apps/ai-service`.
+- `apps/api` never calls Groq directly.
+- `apps/ai-service` is the only service that can call Groq.
