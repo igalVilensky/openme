@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LogoutButton } from "../../logout-button";
 import { SubmissionDetail } from "./submission-detail";
 
 type DashboardInboxDetailPageProps = {
@@ -9,7 +10,7 @@ type DashboardInboxDetailPageProps = {
 };
 
 export default async function DashboardInboxDetailPage({
-  params
+  params,
 }: DashboardInboxDetailPageProps) {
   const { submissionId } = await params;
 
@@ -20,12 +21,15 @@ export default async function DashboardInboxDetailPage({
           <Link href="/dashboard/inbox" className="text-base font-semibold">
             Inbox
           </Link>
-          <Link
-            href="/demo"
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
-          >
-            Public profile
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/demo"
+              className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
+            >
+              Demo profile
+            </Link>
+            <LogoutButton />
+          </div>
         </header>
 
         <SubmissionDetail submissionId={submissionId} />

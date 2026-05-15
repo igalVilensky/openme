@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ApiClientError, apiClient } from "@/lib/api-client";
 
@@ -65,7 +65,7 @@ const statusOptions: SubmissionStatus[] = [
   "REVIEWED",
   "REPLIED",
   "ARCHIVED",
-  "BLOCKED"
+  "BLOCKED",
 ];
 
 function formatStatusLabel(status: SubmissionStatus): string {
@@ -98,7 +98,7 @@ function StatusBadge({ status }: { status: SubmissionStatus }) {
   return (
     <span
       className={`inline-flex rounded-md border px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
-        status
+        status,
       )}`}
     >
       {formatStatusLabel(status)}
@@ -115,7 +115,7 @@ function formatDate(value: string): string {
 
   return date.toLocaleString(undefined, {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
   });
 }
 
@@ -155,61 +155,87 @@ function getSubmitterEmail(submission: InboxSubmissionDetail): string {
   return submission.submitterEmail ?? "No email provided";
 }
 
-export function SubmissionDetail({
-  submissionId
-}: {
-  submissionId: string;
-}) {
+export function SubmissionDetail({ submissionId }: { submissionId: string }) {
   const [submission, setSubmission] = useState<InboxSubmissionDetail | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [savingStatus, setSavingStatus] = useState<SubmissionStatus | null>(
-    null
+    null,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const loadSubmission = useCallback(
-    async (silent = false) => {
-      if (silent) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
+  useEffect(() => {
+    let isMounted = true;
 
+    async function loadInitialSubmission() {
       try {
         const nextSubmission = await apiClient<InboxSubmissionDetail>(
-          `/dashboard/demo/inbox/${encodeURIComponent(submissionId)}`,
+          `/dashboard/inbox/${encodeURIComponent(submissionId)}`,
           {
-            cache: "no-store"
-          }
+            cache: "no-store",
+          },
         );
 
-        setSubmission(nextSubmission);
-        setErrorMessage(null);
+        if (isMounted) {
+          setSubmission(nextSubmission);
+          setErrorMessage(null);
+        }
       } catch (error) {
-        setErrorMessage(
-          error instanceof ApiClientError && error.status === 404
-            ? "Submission not found."
-            : "Unable to load submission."
-        );
+        if (isMounted) {
+          setErrorMessage(
+            error instanceof ApiClientError && error.status === 401
+              ? "AUTH_REQUIRED"
+              : error instanceof ApiClientError && error.status === 404
+                ? "Submission not found."
+                : "Unable to load submission.",
+          );
+        }
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    },
-    [submissionId]
-  );
+    }
 
-  useEffect(() => {
-    loadSubmission();
-  }, [loadSubmission]);
+    loadInitialSubmission();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [submissionId]);
+
+  async function refreshSubmission() {
+    setIsRefreshing(true);
+
+    try {
+      const nextSubmission = await apiClient<InboxSubmissionDetail>(
+        `/dashboard/inbox/${encodeURIComponent(submissionId)}`,
+        {
+          cache: "no-store",
+        },
+      );
+
+      setSubmission(nextSubmission);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiClientError && error.status === 401
+          ? "AUTH_REQUIRED"
+          : error instanceof ApiClientError && error.status === 404
+            ? "Submission not found."
+            : "Unable to load submission.",
+      );
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   const dataRecord = useMemo(
     () => (submission ? asRecord(submission.data) : null),
-    [submission]
+    [submission],
   );
 
   async function updateStatus(status: SubmissionStatus) {
@@ -223,30 +249,32 @@ export function SubmissionDetail({
 
     try {
       const updatedSubmission = await apiClient<InboxSubmissionSummary>(
-        `/dashboard/demo/inbox/${encodeURIComponent(submission.id)}/status`,
+        `/dashboard/inbox/${encodeURIComponent(submission.id)}/status`,
         {
           method: "PATCH",
           body: JSON.stringify({
-            status
-          })
-        }
+            status,
+          }),
+        },
       );
 
       setSubmission((currentSubmission) =>
         currentSubmission
           ? {
               ...currentSubmission,
-              status: updatedSubmission.status
+              status: updatedSubmission.status,
             }
-          : currentSubmission
+          : currentSubmission,
       );
-      setStatusMessage(`Marked ${formatStatusLabel(updatedSubmission.status)}.`);
-      await loadSubmission(true);
+      setStatusMessage(
+        `Marked ${formatStatusLabel(updatedSubmission.status)}.`,
+      );
+      await refreshSubmission();
     } catch (error) {
       setErrorMessage(
         error instanceof ApiClientError
           ? error.message
-          : "Unable to update status."
+          : "Unable to update status.",
       );
     } finally {
       setSavingStatus(null);
@@ -264,6 +292,35 @@ export function SubmissionDetail({
   }
 
   if (!submission) {
+    if (errorMessage === "AUTH_REQUIRED") {
+      return (
+        <section className="py-10">
+          <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium">
+              Log in to view this submission.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              Your dashboard inbox is private to your profile.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href="/login"
+                className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
+              >
+                Register
+              </Link>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className="py-10">
         <div

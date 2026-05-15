@@ -49,7 +49,7 @@ function StatusBadge({ status }: { status: SubmissionStatus }) {
   return (
     <span
       className={`inline-flex shrink-0 rounded-md border px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
-        status
+        status,
       )}`}
     >
       {formatStatusLabel(status)}
@@ -66,7 +66,7 @@ function formatDate(value: string): string {
 
   return date.toLocaleString(undefined, {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
   });
 }
 
@@ -82,6 +82,31 @@ function getSubmitterLabel(submission: InboxSubmissionSummary): string {
   );
 }
 
+function LoginPrompt() {
+  return (
+    <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
+      <p className="text-sm font-medium">Log in to view your inbox.</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+        Public demo pages remain available without an account.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link
+          href="/login"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]"
+        >
+          Log in
+        </Link>
+        <Link
+          href="/register"
+          className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
+        >
+          Register
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function InboxList() {
   const [submissions, setSubmissions] = useState<InboxSubmissionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,10 +118,10 @@ export function InboxList() {
     async function loadInbox() {
       try {
         const nextSubmissions = await apiClient<InboxSubmissionSummary[]>(
-          "/dashboard/demo/inbox",
+          "/dashboard/inbox",
           {
-            cache: "no-store"
-          }
+            cache: "no-store",
+          },
         );
 
         if (isMounted) {
@@ -106,9 +131,11 @@ export function InboxList() {
       } catch (error) {
         if (isMounted) {
           setErrorMessage(
-            error instanceof ApiClientError
-              ? error.message
-              : "Unable to load inbox"
+            error instanceof ApiClientError && error.status === 401
+              ? "AUTH_REQUIRED"
+              : error instanceof ApiClientError
+                ? error.message
+                : "Unable to load inbox",
           );
         }
       } finally {
@@ -133,6 +160,10 @@ export function InboxList() {
     );
   }
 
+  if (errorMessage === "AUTH_REQUIRED") {
+    return <LoginPrompt />;
+  }
+
   if (errorMessage) {
     return (
       <div
@@ -149,13 +180,14 @@ export function InboxList() {
       <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
         <p className="text-sm font-medium">No submissions yet.</p>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          New demo endpoint responses will appear here.
+          New endpoint responses for your profile will appear here. Profile and
+          endpoint builders arrive later.
         </p>
         <Link
           href="/demo/collaborate"
           className="mt-4 inline-flex rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
         >
-          Open demo form
+          View demo form
         </Link>
       </div>
     );

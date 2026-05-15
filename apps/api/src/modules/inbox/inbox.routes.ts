@@ -2,20 +2,36 @@ import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 
 import {
+  getInbox,
   getDemoInbox,
+  getInboxSubmissionById,
   getDemoInboxSubmissionById,
-  patchDemoInboxSubmissionStatus
+  patchInboxSubmissionStatus,
+  patchDemoInboxSubmissionStatus,
 } from "./inbox.controller";
+import { requireAuth } from "../auth/auth.middleware";
 
 export const inboxRouter: ExpressRouter = Router();
 
-// Temporary MVP dashboard routes: "demo" is the seeded owner until auth lands.
+inboxRouter.get("/dashboard/inbox", requireAuth, getInbox);
+inboxRouter.get(
+  "/dashboard/inbox/:submissionId",
+  requireAuth,
+  getInboxSubmissionById,
+);
+inboxRouter.patch(
+  "/dashboard/inbox/:submissionId/status",
+  requireAuth,
+  patchInboxSubmissionStatus,
+);
+
+// Legacy demo-only routes for local demo compatibility.
 inboxRouter.get("/dashboard/demo/inbox", getDemoInbox);
 inboxRouter.get(
   "/dashboard/demo/inbox/:submissionId",
-  getDemoInboxSubmissionById
+  getDemoInboxSubmissionById,
 );
 inboxRouter.patch(
   "/dashboard/demo/inbox/:submissionId/status",
-  patchDemoInboxSubmissionStatus
+  patchDemoInboxSubmissionStatus,
 );

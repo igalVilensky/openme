@@ -1,6 +1,6 @@
 # Current State
 
-This document captures the state of the OpenMe MVP after the first working public submission and AI analysis flow.
+This document captures the state of the OpenMe MVP after adding email/password auth and owner-scoped dashboard routes.
 
 ## Completed Features
 
@@ -12,6 +12,8 @@ This document captures the state of the OpenMe MVP after the first working publi
 - Public demo profile page at `/demo`
 - Public endpoint page and submission form at `/demo/collaborate`
 - Public submission creation through `apps/api`
+- Email/password registration and login
+- HTTP-only cookie auth with JWT sessions
 - Dashboard inbox list at `/dashboard/inbox`
 - Dashboard submission detail page
 - Submission status updates
@@ -31,13 +33,15 @@ This document captures the state of the OpenMe MVP after the first working publi
 6. If `AI_ENABLED=true`, `apps/api` calls `apps/ai-service`.
 7. `apps/ai-service` analyzes the submission using mock mode or Groq mode.
 8. `apps/api` stores the result in `SubmissionAnalysis`.
-9. The owner opens `/dashboard/inbox`.
-10. The owner opens a submission detail page and sees the analysis if it has completed.
+9. The owner logs in at `/login`.
+10. The owner opens `/dashboard/inbox`.
+11. `apps/api` scopes the inbox to the authenticated owner's profile.
+12. The owner opens a submission detail page and sees the analysis if it has completed.
 
 ## Current Architecture Status
 
 - `apps/web` owns public pages and dashboard UI.
-- `apps/api` owns validation, persistence, public profile APIs, public submission APIs, and inbox APIs.
+- `apps/api` owns auth, validation, persistence, public profile APIs, public submission APIs, and owner-scoped inbox APIs.
 - `apps/ai-service` owns analysis and is the only app that can call Groq.
 - PostgreSQL is the system of record.
 - Prisma defines the relational schema and generated API client types.
@@ -47,8 +51,9 @@ This document captures the state of the OpenMe MVP after the first working publi
 
 ## Temporary MVP Shortcuts
 
-- No auth yet.
-- Dashboard inbox is scoped to the seeded demo profile.
+- Auth is MVP email/password only. OAuth, reset flows, and email verification are not implemented.
+- New registered profiles do not have a profile builder or endpoint builder yet.
+- Legacy demo inbox routes remain available at `/dashboard/demo/inbox` for local compatibility.
 - No real user profile builder yet.
 - No endpoint builder yet.
 - No production deployment config yet.
@@ -57,9 +62,10 @@ This document captures the state of the OpenMe MVP after the first working publi
 
 ## Known Limitations
 
-- Only the seeded demo owner flow is wired end to end.
-- Dashboard routes assume the demo profile.
+- The seeded demo user is still the main local end-to-end example.
+- The demo user is local-only test data: `demo@openme.local` / `password123`.
 - Public endpoint fields and boundaries are seeded, not user-managed.
+- New accounts can log in and receive owner-scoped dashboard access, but they do not create endpoints yet.
 - There are no automated end-to-end tests yet.
 - AI analysis has no retry queue.
 - AI analysis can be delayed or absent if the AI service is offline.
@@ -70,8 +76,8 @@ This document captures the state of the OpenMe MVP after the first working publi
 
 ## Next Recommended Steps
 
-- Add authentication and owner-scoped dashboard access.
 - Build profile editing and endpoint builder flows.
+- Add OAuth, password reset, and email verification when the MVP auth path is stable enough to justify them.
 - Add a service token or private network boundary for `apps/ai-service`.
 - Add automated tests for public submission creation, inbox reads, and AI fallback behavior.
 - Add explicit pending/complete analysis state in the inbox UI.

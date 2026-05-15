@@ -50,11 +50,33 @@ function parseAiServiceUrl(value: string | undefined): string {
   return (value ?? "http://localhost:8000").replace(/\/+$/, "");
 }
 
+function parseJwtSecret(value: string | undefined): string {
+  const secret = value?.trim();
+
+  if (secret) {
+    if (
+      process.env.NODE_ENV === "production" &&
+      secret === "replace_me_with_a_long_random_secret"
+    ) {
+      throw new Error("JWT_SECRET must be changed in production");
+    }
+
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET is required in production");
+  }
+
+  return "dev_only_openme_jwt_secret_change_me";
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: parsePort(process.env.PORT),
   corsOrigin: parseCorsOrigins(process.env.CORS_ORIGIN),
   databaseUrl: parseDatabaseUrl(process.env.DATABASE_URL),
   aiEnabled: parseBoolean(process.env.AI_ENABLED),
-  aiServiceUrl: parseAiServiceUrl(process.env.AI_SERVICE_URL)
+  aiServiceUrl: parseAiServiceUrl(process.env.AI_SERVICE_URL),
+  jwtSecret: parseJwtSecret(process.env.JWT_SECRET),
 } as const;

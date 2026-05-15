@@ -37,6 +37,12 @@ pnpm --filter @openme/api db:migrate
 pnpm --filter @openme/api db:seed
 ```
 
+Expected: seed logs the public demo profile and the local-only demo login:
+
+```text
+demo@openme.local / password123
+```
+
 ## API Health Checks
 
 - Start the API.
@@ -52,6 +58,56 @@ curl http://localhost:4000/health
 ```
 
 Expected: `{"status":"ok"}`.
+
+## Auth Checks
+
+- Confirm unauthenticated dashboard access is rejected.
+
+```bash
+curl -i http://localhost:4000/auth/me
+curl -i http://localhost:4000/dashboard/inbox
+```
+
+Expected: HTTP 401.
+
+- Log in as the local-only demo user and save cookies.
+
+```bash
+curl -i -c /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@openme.local","password":"password123"}'
+```
+
+Expected: HTTP 200, a `Set-Cookie` header, and a user/profile summary for `demo`.
+
+- Fetch the current user with the saved cookie.
+
+```bash
+curl -b /tmp/openme-cookies.txt http://localhost:4000/auth/me
+```
+
+Expected: profile username is `demo`.
+
+- Register a new local account.
+
+```bash
+curl -i -c /tmp/openme-register-cookies.txt \
+  -X POST http://localhost:4000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"qa@example.com","password":"password123","username":"qa-user","displayName":"QA User"}'
+```
+
+Expected: HTTP 201, a `Set-Cookie` header, and a public profile summary for `qa-user`.
+
+- Log out.
+
+```bash
+curl -i -b /tmp/openme-cookies.txt -c /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/auth/logout
+```
+
+Expected: HTTP 200 and the auth cookie is cleared.
 
 ## AI Service Health Checks
 
@@ -138,10 +194,10 @@ Expected: success response in the UI and a new inbox item.
 
 ## Inbox Checks
 
-- Fetch the demo inbox.
+- Fetch the authenticated owner inbox with the demo login cookie.
 
 ```bash
-curl http://localhost:4000/dashboard/demo/inbox
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/inbox
 ```
 
 - Open the inbox in the browser.
@@ -149,6 +205,8 @@ curl http://localhost:4000/dashboard/demo/inbox
 ```text
 http://localhost:3000/dashboard/inbox
 ```
+
+- If prompted, log in with `demo@openme.local` / `password123`.
 
 - Confirm the new submission appears near the top.
 
@@ -164,7 +222,8 @@ Expected: submitter info, message, endpoint fields, answers, and current status 
 
 ```bash
 curl -i \
-  -X PATCH http://localhost:4000/dashboard/demo/inbox/SUBMISSION_ID/status \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/inbox/SUBMISSION_ID/status \
   -H "Content-Type: application/json" \
   -d '{"status":"REVIEWED"}'
 ```
@@ -172,6 +231,12 @@ curl -i \
 - Refresh the inbox detail page.
 
 Expected: status is updated.
+
+- Optionally confirm the legacy demo-only route still works for compatibility.
+
+```bash
+curl http://localhost:4000/dashboard/demo/inbox
+```
 
 Valid statuses:
 
@@ -264,8 +329,10 @@ pnpm --filter @openme/web lint
 - Run a full manual submission flow:
 
 ```text
-/demo/collaborate -> submit form -> /dashboard/inbox -> open detail
+/demo/collaborate -> submit form -> /login -> /dashboard/inbox -> open detail
 ```
+
+- Confirm logged-out dashboard pages show a login prompt or redirect path.
 
 - Confirm public submission creation still succeeds when AI service is stopped.
 

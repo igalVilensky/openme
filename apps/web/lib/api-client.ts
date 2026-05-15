@@ -4,16 +4,35 @@ export const apiBaseUrl =
 export class ApiClientError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
   ) {
     super(message);
     this.name = "ApiClientError";
   }
 }
 
+type ApiErrorResponse = {
+  error?: {
+    message?: string;
+  };
+};
+
+async function getApiErrorMessage(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as ApiErrorResponse;
+
+    return (
+      body.error?.message ??
+      `OpenMe API request failed with status ${response.status}`
+    );
+  } catch {
+    return `OpenMe API request failed with status ${response.status}`;
+  }
+}
+
 export async function apiClient<TResponse>(
   path: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TResponse> {
   const baseUrl = apiBaseUrl.endsWith("/") ? apiBaseUrl : `${apiBaseUrl}/`;
   const headers = new Headers(init?.headers);
@@ -24,13 +43,14 @@ export async function apiClient<TResponse>(
 
   const response = await fetch(new URL(path, baseUrl), {
     ...init,
-    headers
+    credentials: init?.credentials ?? "include",
+    headers,
   });
 
   if (!response.ok) {
     throw new ApiClientError(
-      `OpenMe API request failed with status ${response.status}`,
-      response.status
+      await getApiErrorMessage(response),
+      response.status,
     );
   }
 

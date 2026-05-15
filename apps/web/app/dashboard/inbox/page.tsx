@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LogoutButton } from "../logout-button";
 import { InboxList } from "./inbox-list";
 
 export default function DashboardInboxPage() {
@@ -15,8 +16,9 @@ export default function DashboardInboxPage() {
               href="/demo"
               className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
             >
-              Public profile
+              Demo profile
             </Link>
+            <LogoutButton />
           </div>
         </header>
 
@@ -31,7 +33,7 @@ export default function DashboardInboxPage() {
               </h1>
             </div>
             <div className="rounded-md bg-[#f2efe7] px-4 py-3 text-sm text-[var(--muted)]">
-              Demo owner
+              Owner inbox
             </div>
           </div>
 

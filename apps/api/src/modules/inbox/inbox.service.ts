@@ -4,12 +4,12 @@ import type {
   FieldType,
   Prisma,
   Priority,
-  SubmissionStatus
+  SubmissionStatus,
 } from "../../generated/prisma/client";
 import type { InboxStatus } from "./inbox.validators";
 
-// Temporary MVP owner context until authentication exists. These dashboard
-// routes intentionally scope all reads/writes to the seeded demo profile.
+// Legacy demo-only owner context. The authenticated dashboard routes below use
+// the current owner's profile id; these wrappers keep the public demo flow alive.
 const DEMO_OWNER_USERNAME = "demo";
 const PREVIEW_LENGTH = 140;
 
@@ -115,7 +115,7 @@ function jsonValueToPreview(value: Prisma.JsonValue): string | null {
 
 function derivePreview(
   message: string | null,
-  data: Prisma.JsonValue
+  data: Prisma.JsonValue,
 ): string | null {
   if (message) {
     const messagePreview = truncatePreview(message);
@@ -130,7 +130,7 @@ function derivePreview(
   }
 
   const firstValue = Object.values(data).find((value) =>
-    Boolean(jsonValueToPreview(value))
+    Boolean(jsonValueToPreview(value)),
   );
 
   return firstValue ? jsonValueToPreview(firstValue) : null;
@@ -159,23 +159,34 @@ function toSubmissionSummary(submission: {
     submitterEmail: submission.submitterEmail,
     message: submission.message,
     preview: derivePreview(submission.message, submission.data),
-    endpoint: submission.endpoint
+    endpoint: submission.endpoint,
   };
 }
 
-export async function listDemoInboxSubmissions(): Promise<
-  InboxSubmissionSummary[]
-> {
+async function getDemoProfileId(): Promise<string | null> {
+  const profile = await prisma.profile.findUnique({
+    where: {
+      username: DEMO_OWNER_USERNAME,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return profile?.id ?? null;
+}
+
+export async function listInboxSubmissions(
+  profileId: string,
+): Promise<InboxSubmissionSummary[]> {
   const submissions = await prisma.submission.findMany({
     where: {
       endpoint: {
-        profile: {
-          username: DEMO_OWNER_USERNAME
-        }
-      }
+        profileId,
+      },
     },
     orderBy: {
-      createdAt: "desc"
+      createdAt: "desc",
     },
     select: {
       id: true,
@@ -190,26 +201,33 @@ export async function listDemoInboxSubmissions(): Promise<
           id: true,
           slug: true,
           method: true,
-          title: true
-        }
-      }
-    }
+          title: true,
+        },
+      },
+    },
   });
 
   return submissions.map(toSubmissionSummary);
 }
 
-export async function getDemoInboxSubmission(
-  submissionId: string
+export async function listDemoInboxSubmissions(): Promise<
+  InboxSubmissionSummary[]
+> {
+  const profileId = await getDemoProfileId();
+
+  return profileId ? listInboxSubmissions(profileId) : [];
+}
+
+export async function getInboxSubmission(
+  profileId: string,
+  submissionId: string,
 ): Promise<InboxSubmissionDetail | null> {
   const submission = await prisma.submission.findFirst({
     where: {
       id: submissionId,
       endpoint: {
-        profile: {
-          username: DEMO_OWNER_USERNAME
-        }
-      }
+        profileId,
+      },
     },
     select: {
       id: true,
@@ -232,10 +250,10 @@ export async function getDemoInboxSubmission(
               id: true,
               type: true,
               label: true,
-              position: true
-            }
-          }
-        }
+              position: true,
+            },
+          },
+        },
       },
       analysis: {
         select: {
@@ -243,10 +261,10 @@ export async function getDemoInboxSubmission(
           intent: true,
           boundaryStatus: true,
           priority: true,
-          suggestedReply: true
-        }
-      }
-    }
+          suggestedReply: true,
+        },
+      },
+    },
   });
 
   if (!submission) {
@@ -263,26 +281,33 @@ export async function getDemoInboxSubmission(
     message: submission.message,
     data: submission.data,
     endpoint: submission.endpoint,
-    analysis: submission.analysis
+    analysis: submission.analysis,
   };
 }
 
-export async function updateDemoInboxSubmissionStatus(
+export async function getDemoInboxSubmission(
   submissionId: string,
-  status: InboxStatus
+): Promise<InboxSubmissionDetail | null> {
+  const profileId = await getDemoProfileId();
+
+  return profileId ? getInboxSubmission(profileId, submissionId) : null;
+}
+
+export async function updateInboxSubmissionStatus(
+  profileId: string,
+  submissionId: string,
+  status: InboxStatus,
 ): Promise<InboxSubmissionSummary | null> {
   const existingSubmission = await prisma.submission.findFirst({
     where: {
       id: submissionId,
       endpoint: {
-        profile: {
-          username: DEMO_OWNER_USERNAME
-        }
-      }
+        profileId,
+      },
     },
     select: {
-      id: true
-    }
+      id: true,
+    },
   });
 
   if (!existingSubmission) {
@@ -291,10 +316,10 @@ export async function updateDemoInboxSubmissionStatus(
 
   const submission = await prisma.submission.update({
     where: {
-      id: existingSubmission.id
+      id: existingSubmission.id,
     },
     data: {
-      status
+      status,
     },
     select: {
       id: true,
@@ -309,11 +334,22 @@ export async function updateDemoInboxSubmissionStatus(
           id: true,
           slug: true,
           method: true,
-          title: true
-        }
-      }
-    }
+          title: true,
+        },
+      },
+    },
   });
 
   return toSubmissionSummary(submission);
+}
+
+export async function updateDemoInboxSubmissionStatus(
+  submissionId: string,
+  status: InboxStatus,
+): Promise<InboxSubmissionSummary | null> {
+  const profileId = await getDemoProfileId();
+
+  return profileId
+    ? updateInboxSubmissionStatus(profileId, submissionId, status)
+    : null;
 }

@@ -2,7 +2,7 @@
 
 OpenMe is an actionable bio page. Instead of only listing where someone can be found, an OpenMe profile shows what people can do with them through personal endpoints such as `/collaborate`, `/ask-me`, and `/feedback`.
 
-The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, a demo owner inbox, and optional AI analysis for new submissions.
+The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, email/password owner auth, an authenticated dashboard inbox, and optional AI analysis for new submissions.
 
 ## Current MVP Features
 
@@ -12,7 +12,9 @@ The current MVP supports a seeded demo profile at `/demo`, public endpoint submi
 - Public profile page at `http://localhost:3000/demo`
 - Public endpoint form at `http://localhost:3000/demo/collaborate`
 - Visitor submission creation
-- Dashboard inbox at `http://localhost:3000/dashboard/inbox`
+- Email/password auth with HTTP-only JWT cookies
+- Login and register pages at `http://localhost:3000/login` and `http://localhost:3000/register`
+- Authenticated dashboard inbox at `http://localhost:3000/dashboard/inbox`
 - Submission detail view with status updates
 - Optional AI analysis with summary, intent, boundary status, priority, and suggested reply
 - AI service mock mode by default
@@ -33,7 +35,7 @@ If AI analysis fails, the public submission still succeeds.
 
 ```text
 apps/
-  api/          Express API, Prisma schema, public submission and inbox routes
+  api/          Express API, Prisma schema, auth, public submission, and inbox routes
   web/          Next.js app for public pages and dashboard UI
   ai-service/   FastAPI service for mock or Groq-powered submission analysis
 docs/
@@ -44,6 +46,7 @@ docs/
 Runtime responsibility:
 
 - `apps/web` never calls Groq.
+- `apps/web` never sees `JWT_SECRET`.
 - `apps/api` never calls Groq directly.
 - `apps/api` calls `apps/ai-service` when `AI_ENABLED=true`.
 - `apps/ai-service` calls Groq only when `AI_PROVIDER=groq` and `GROQ_API_KEY` is present.
@@ -56,7 +59,7 @@ Create a local `.env` from the example:
 cp .env.example .env
 ```
 
-Do not commit `.env`. `GROQ_API_KEY` must stay private and must never be exposed to the frontend.
+Do not commit `.env`. `GROQ_API_KEY` and `JWT_SECRET` must stay private and must never be exposed to the frontend.
 
 Required variables:
 
@@ -134,6 +137,13 @@ The seed creates the demo profile used by the MVP:
 http://localhost:3000/demo
 ```
 
+It also creates a local-only demo dashboard login:
+
+```text
+email: demo@openme.local
+password: password123
+```
+
 ## Run apps/ai-service in Mock Mode
 
 Mock mode is deterministic and does not call Groq.
@@ -200,6 +210,7 @@ Open:
 
 ```text
 http://localhost:3000/demo
+http://localhost:3000/login
 ```
 
 ## Full Manual Flow
@@ -250,15 +261,22 @@ http://localhost:3000/demo/collaborate
 
 7. Submit the form.
 
-8. Open the inbox.
+8. Log in as the local-only demo owner.
+
+```text
+http://localhost:3000/login
+demo@openme.local / password123
+```
+
+9. Open the inbox.
 
 ```text
 http://localhost:3000/dashboard/inbox
 ```
 
-9. Open the new submission detail page.
+10. Open the new submission detail page.
 
-10. Confirm the AI analysis appears.
+11. Confirm the AI analysis appears.
 
 Analysis is fire-and-forget, so it can briefly be pending. Refresh the detail page if needed.
 
@@ -269,8 +287,15 @@ curl http://localhost:4000/health
 curl http://localhost:8000/health
 curl http://localhost:4000/public/profiles/demo
 curl http://localhost:4000/public/profiles/demo/endpoints/collaborate
-curl http://localhost:4000/dashboard/demo/inbox
+curl -i -c /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@openme.local","password":"password123"}'
+curl -b /tmp/openme-cookies.txt http://localhost:4000/auth/me
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/inbox
 ```
+
+Legacy demo-only inbox routes still exist for compatibility at `/dashboard/demo/inbox`, but the dashboard UI uses the authenticated owner routes.
 
 ## Build and Lint
 
