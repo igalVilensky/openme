@@ -2,7 +2,7 @@
 
 OpenMe is an actionable bio page. Instead of only listing where someone can be found, an OpenMe profile shows what people can do with them through personal endpoints such as `/collaborate`, `/ask-me`, and `/feedback`.
 
-The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, email/password owner auth, an authenticated dashboard inbox, and optional AI analysis for new submissions.
+The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, email/password owner auth, an authenticated profile editor and dashboard inbox, and optional AI analysis for new submissions.
 
 ## Current MVP Features
 
@@ -14,6 +14,7 @@ The current MVP supports a seeded demo profile at `/demo`, public endpoint submi
 - Visitor submission creation
 - Email/password auth with HTTP-only JWT cookies
 - Login and register pages at `http://localhost:3000/login` and `http://localhost:3000/register`
+- Authenticated profile editor at `http://localhost:3000/dashboard/profile`
 - Authenticated dashboard inbox at `http://localhost:3000/dashboard/inbox`
 - Submission detail view with status updates
 - Optional AI analysis with summary, intent, boundary status, priority, and suggested reply
@@ -35,7 +36,7 @@ If AI analysis fails, the public submission still succeeds.
 
 ```text
 apps/
-  api/          Express API, Prisma schema, auth, public submission, and inbox routes
+  api/          Express API, Prisma schema, auth, profile, public submission, and inbox routes
   web/          Next.js app for public pages and dashboard UI
   ai-service/   FastAPI service for mock or Groq-powered submission analysis
 docs/
@@ -268,15 +269,29 @@ http://localhost:3000/login
 demo@openme.local / password123
 ```
 
-9. Open the inbox.
+9. Open the profile editor and update public profile fields.
+
+```text
+http://localhost:3000/dashboard/profile
+```
+
+Username editing, link editing, endpoint building, and avatar uploads are not implemented yet.
+
+10. Open the public profile and confirm saved profile fields changed.
+
+```text
+http://localhost:3000/demo
+```
+
+11. Open the inbox.
 
 ```text
 http://localhost:3000/dashboard/inbox
 ```
 
-10. Open the new submission detail page.
+12. Open the new submission detail page.
 
-11. Confirm the AI analysis appears.
+13. Confirm the AI analysis appears.
 
 Analysis is fire-and-forget, so it can briefly be pending. Refresh the detail page if needed.
 
@@ -292,6 +307,7 @@ curl -i -c /tmp/openme-cookies.txt \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@openme.local","password":"password123"}'
 curl -b /tmp/openme-cookies.txt http://localhost:4000/auth/me
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/profile
 curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/inbox
 ```
 

@@ -11,11 +11,12 @@ const dashboardItemBase = [
   {
     label: "Profile",
     value: "Public",
-    detail: "Profile builder arrives later",
+    detail: "Edit public profile fields",
+    href: "/dashboard/profile",
   },
   {
     label: "Endpoints",
-    value: "Seeded",
+    value: "Later",
     detail: "Endpoint builder arrives later",
   },
   {

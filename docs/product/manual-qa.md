@@ -65,6 +65,7 @@ Expected: `{"status":"ok"}`.
 
 ```bash
 curl -i http://localhost:4000/auth/me
+curl -i http://localhost:4000/dashboard/profile
 curl -i http://localhost:4000/dashboard/inbox
 ```
 
@@ -108,6 +109,60 @@ curl -i -b /tmp/openme-cookies.txt -c /tmp/openme-cookies.txt \
 ```
 
 Expected: HTTP 200 and the auth cookie is cleared.
+
+## Profile Editor Checks
+
+- Fetch the authenticated owner profile with the demo login cookie.
+
+```bash
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/profile
+```
+
+Expected: profile username is `demo` and public profile fields are present.
+
+- Update editable profile fields.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/profile \
+  -H "Content-Type: application/json" \
+  -d '{"headline":"Full-stack developer building useful AI-assisted tools","bio":"Short demo bio for QA.","status":"Open to meaningful collaborations","languages":["English","German","Hebrew"],"currentFocus":"Building OpenMe","isPublic":true}'
+```
+
+Expected: HTTP 200 and the response includes the updated fields.
+
+- Confirm username editing is rejected.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/profile \
+  -H "Content-Type: application/json" \
+  -d '{"username":"new-demo"}'
+```
+
+Expected: HTTP 400 validation error.
+
+- Open the profile editor in the browser.
+
+```text
+http://localhost:3000/dashboard/profile
+```
+
+- If prompted, log in with `demo@openme.local` / `password123`.
+
+- Edit headline, bio, status, current focus, and languages, then save.
+
+Expected: a save success message appears with a link to the public profile.
+
+- Open the public demo profile.
+
+```text
+http://localhost:3000/demo
+```
+
+Expected: saved profile fields are visible. Username, links, endpoints, and avatar uploads are not editable yet.
 
 ## AI Service Health Checks
 
@@ -329,7 +384,7 @@ pnpm --filter @openme/web lint
 - Run a full manual submission flow:
 
 ```text
-/demo/collaborate -> submit form -> /login -> /dashboard/inbox -> open detail
+/demo/collaborate -> submit form -> /login -> /dashboard/profile -> save profile -> /dashboard/inbox -> open detail
 ```
 
 - Confirm logged-out dashboard pages show a login prompt or redirect path.
