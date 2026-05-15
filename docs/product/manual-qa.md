@@ -196,6 +196,7 @@ AI_PROVIDER=mock uvicorn app.main:app --host 0.0.0.0 --port 8000
 - Start API with AI enabled.
 
 ```bash
+cd ~/Projects/openme
 AI_ENABLED=true AI_SERVICE_URL=http://localhost:8000 pnpm --filter @openme/api dev
 ```
 

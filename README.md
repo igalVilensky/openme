@@ -171,12 +171,14 @@ Never commit the Groq key.
 From the repository root, with AI disabled:
 
 ```bash
+cd ~/Projects/openme
 pnpm --filter @openme/api dev
 ```
 
 With AI enabled:
 
 ```bash
+cd ~/Projects/openme
 AI_ENABLED=true AI_SERVICE_URL=http://localhost:8000 pnpm --filter @openme/api dev
 ```
 
@@ -229,12 +231,14 @@ AI_PROVIDER=mock uvicorn app.main:app --host 0.0.0.0 --port 8000
 4. Start the API with AI enabled.
 
 ```bash
+cd ~/Projects/openme
 AI_ENABLED=true AI_SERVICE_URL=http://localhost:8000 pnpm --filter @openme/api dev
 ```
 
 5. Start the web app.
 
 ```bash
+cd ~/Projects/openme
 pnpm --filter @openme/web dev
 ```
 
