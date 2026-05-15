@@ -38,9 +38,23 @@ function parseDatabaseUrl(value: string | undefined): string {
   return value ?? "postgresql://openme:openme@localhost:5432/openme_dev";
 }
 
+function parseBoolean(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+}
+
+function parseAiServiceUrl(value: string | undefined): string {
+  return (value ?? "http://localhost:8000").replace(/\/+$/, "");
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: parsePort(process.env.PORT),
   corsOrigin: parseCorsOrigins(process.env.CORS_ORIGIN),
-  databaseUrl: parseDatabaseUrl(process.env.DATABASE_URL)
+  databaseUrl: parseDatabaseUrl(process.env.DATABASE_URL),
+  aiEnabled: parseBoolean(process.env.AI_ENABLED),
+  aiServiceUrl: parseAiServiceUrl(process.env.AI_SERVICE_URL)
 } as const;

@@ -30,7 +30,7 @@ Responsibilities:
 - submissions
 - inbox
 - public profile API
-- calls to AI service later
+- calls apps/ai-service after public submission creation when AI_ENABLED=true
 
 ### apps/ai-service
 
@@ -44,7 +44,13 @@ Responsibilities:
 - suggest replies
 - moderate content
 
-This app comes after the web and API MVP works.
+Providers:
+
+- mock analyzer by default
+- Groq analyzer when AI_PROVIDER=groq and GROQ_API_KEY is configured
+
+apps/web never calls Groq. apps/api never calls Groq directly. apps/api calls
+apps/ai-service, and apps/ai-service is the only app that can call Groq.
 
 ## Database
 
@@ -70,3 +76,4 @@ Main entities:
 - Do not add queues yet.
 - AI must be optional.
 - If AI fails, submissions must still be saved.
+- Failed AI analysis must never block public submission creation.

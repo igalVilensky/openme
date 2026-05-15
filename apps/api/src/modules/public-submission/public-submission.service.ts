@@ -1,11 +1,18 @@
+import { env } from "../../config/env";
 import { prisma } from "../../db/prisma";
 import { HttpError } from "../../errors/http-error";
 import {
   EndpointMethod,
   EndpointStatus,
   EndpointVisibility,
+  Prisma,
   SubmissionStatus
 } from "../../generated/prisma/client";
+import {
+  analyzeSubmissionWithAiService,
+  type AnalyzeSubmissionPayload,
+  type AnalyzeSubmissionResult
+} from "../../services/ai-client";
 import { validatePublicSubmissionBody } from "./public-submission.validators";
 
 export type CreatePublicSubmissionResponse = {
@@ -21,6 +28,63 @@ function normalizeUsername(username: string): string {
 
 function normalizeEndpointSlug(endpointSlug: string): string {
   return endpointSlug.trim().replace(/^\/+/, "").toLowerCase();
+}
+
+async function saveSubmissionAnalysis(
+  submissionId: string,
+  analysis: AnalyzeSubmissionResult
+): Promise<void> {
+  const raw: Prisma.InputJsonObject = {
+    summary: analysis.summary,
+    intent: analysis.intent,
+    boundaryStatus: analysis.boundaryStatus,
+    priority: analysis.priority,
+    suggestedReply: analysis.suggestedReply
+  };
+
+  await prisma.submissionAnalysis.upsert({
+    where: {
+      submissionId
+    },
+    create: {
+      submissionId,
+      summary: analysis.summary,
+      intent: analysis.intent,
+      boundaryStatus: analysis.boundaryStatus,
+      priority: analysis.priority,
+      suggestedReply: analysis.suggestedReply,
+      raw
+    },
+    update: {
+      summary: analysis.summary,
+      intent: analysis.intent,
+      boundaryStatus: analysis.boundaryStatus,
+      priority: analysis.priority,
+      suggestedReply: analysis.suggestedReply,
+      raw
+    }
+  });
+}
+
+async function analyzeAndSaveSubmission(
+  payload: AnalyzeSubmissionPayload
+): Promise<void> {
+  const analysis = await analyzeSubmissionWithAiService(payload);
+
+  await saveSubmissionAnalysis(payload.submission.id, analysis);
+}
+
+function queueSubmissionAnalysis(payload: AnalyzeSubmissionPayload): void {
+  if (!env.aiEnabled) {
+    return;
+  }
+
+  void analyzeAndSaveSubmission(payload).catch((error) => {
+    console.error(
+      `AI analysis failed for submission ${payload.submission.id}`,
+      error
+    );
+  });
 }
 
 export async function createPublicSubmission(
@@ -60,9 +124,18 @@ export async function createPublicSubmission(
     },
     select: {
       id: true,
+      slug: true,
+      title: true,
+      description: true,
       method: true,
       status: true,
       visibility: true,
+      profile: {
+        select: {
+          username: true,
+          displayName: true
+        }
+      },
       fields: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
         select: {
@@ -71,6 +144,19 @@ export async function createPublicSubmission(
           label: true,
           options: true,
           required: true
+        }
+      },
+      boundaries: {
+        where: {
+          isActive: true
+        },
+        orderBy: {
+          createdAt: "asc"
+        },
+        select: {
+          title: true,
+          description: true,
+          priority: true
         }
       }
     }
@@ -113,6 +199,28 @@ export async function createPublicSubmission(
       id: true,
       status: true,
       createdAt: true
+    }
+  });
+
+  queueSubmissionAnalysis({
+    profile: endpoint.profile,
+    endpoint: {
+      slug: endpoint.slug,
+      title: endpoint.title,
+      description: endpoint.description,
+      boundaries: endpoint.boundaries,
+      fields: endpoint.fields.map((field) => ({
+        id: field.id,
+        label: field.label,
+        type: field.type
+      }))
+    },
+    submission: {
+      id: submission.id,
+      submitterName: validation.value.submitterName,
+      submitterEmail: validation.value.submitterEmail,
+      message: validation.value.message,
+      data: validation.value.data
     }
   });
 
