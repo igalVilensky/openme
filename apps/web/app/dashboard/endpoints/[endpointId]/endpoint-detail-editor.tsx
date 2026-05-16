@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 import { ApiClientError, apiClient } from "@/lib/api-client";
@@ -25,6 +26,7 @@ import {
   type DashboardEndpointDetail,
   type DashboardEndpointField,
   type EndpointMetadataFormState,
+  type EndpointStatus,
   type FieldFormState,
   type FieldType,
   type JsonValue,
@@ -171,6 +173,9 @@ function MetadataFormFields({
           value={form.slug}
           onChange={(event) => onChange("slug", event.target.value)}
         />
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          Used in your public URL. Example: mentor-me.
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="detail-endpoint-title">
@@ -207,6 +212,9 @@ function MetadataFormFields({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          POST = visitors submit something. GET = read-only info page.
+        </p>
       </div>
       <div>
         <label
@@ -232,6 +240,9 @@ function MetadataFormFields({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          PUBLIC = shown on profile. UNLISTED = direct URL. PRIVATE = hidden.
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="detail-endpoint-status">
@@ -254,6 +265,10 @@ function MetadataFormFields({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          DRAFT = not public. PUBLISHED = available if visibility allows.
+          ARCHIVED = hidden but kept.
+        </p>
       </div>
       <div className="lg:col-span-2">
         <label
@@ -361,6 +376,9 @@ function FieldFormFields({
           value={form.options}
           onChange={(event) => onChange("options", event.target.value)}
         />
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          For Select/Multi-select, enter one option per line or comma-separated.
+        </p>
       </div>
       <label className="flex items-center gap-3 text-sm">
         <input
@@ -456,6 +474,7 @@ function BoundaryFormFields({
 }
 
 export function EndpointDetailEditor({ endpointId }: { endpointId: string }) {
+  const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [endpoint, setEndpoint] = useState<DashboardEndpointDetail | null>(
     null,
@@ -599,6 +618,78 @@ export function EndpointDetailEditor({ endpointId }: { endpointId: string }) {
         error instanceof ApiClientError
           ? error.message
           : "Unable to save endpoint.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function updateEndpointStatus(status: EndpointStatus) {
+    if (!endpoint || endpoint.status === status) {
+      return;
+    }
+
+    setPendingAction(`endpoint:status:${status}`);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const updatedEndpoint = await apiClient<DashboardEndpointDetail>(
+        `/dashboard/endpoints/${encodeURIComponent(endpointId)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status,
+          }),
+        },
+      );
+
+      setEndpoint(updatedEndpoint);
+      setMetadataForm(toMetadataForm(updatedEndpoint));
+      setSuccessMessage(`Endpoint marked ${formatEnumLabel(status)}.`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiClientError
+          ? error.message
+          : "Unable to update endpoint status.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function deleteEndpoint() {
+    if (!endpoint) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Delete "${endpoint.title}" permanently? This removes the endpoint and cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    setPendingAction("endpoint:delete");
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await apiClient<{ success: boolean }>(
+        `/dashboard/endpoints/${encodeURIComponent(endpointId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      router.push("/dashboard/endpoints");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiClientError
+          ? error.message
+          : "Unable to delete endpoint.",
       );
     } finally {
       setPendingAction(null);
@@ -1044,7 +1135,7 @@ export function EndpointDetailEditor({ endpointId }: { endpointId: string }) {
             </Link>
             {isPublicEndpoint(endpoint) ? (
               <Link href={publicHref} className={buttonClass()}>
-                Open public URL
+                Open URL
               </Link>
             ) : null}
           </div>
@@ -1098,6 +1189,44 @@ export function EndpointDetailEditor({ endpointId }: { endpointId: string }) {
             {pendingAction === "metadata" ? "Saving..." : "Save endpoint"}
           </button>
         </form>
+
+        <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold">Archive and delete</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+            Archive keeps submissions; delete removes the endpoint permanently.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {endpoint.submissionCount > 0 ? (
+              endpoint.status === "ARCHIVED" ? (
+                <span className="rounded-md border border-[var(--line)] bg-[#f2efe7] px-3 py-2 text-sm text-[var(--muted)]">
+                  Archived with {endpoint.submissionCount} submissions kept.
+                </span>
+              ) : (
+                <button
+                  className={buttonClass()}
+                  disabled={isBusy}
+                  type="button"
+                  onClick={() => updateEndpointStatus("ARCHIVED")}
+                >
+                  {pendingAction === "endpoint:status:ARCHIVED"
+                    ? "Archiving..."
+                    : "Archive endpoint"}
+                </button>
+              )
+            ) : (
+              <button
+                className={dangerButtonClass()}
+                disabled={isBusy}
+                type="button"
+                onClick={deleteEndpoint}
+              >
+                {pendingAction === "endpoint:delete"
+                  ? "Deleting..."
+                  : "Delete endpoint"}
+              </button>
+            )}
+          </div>
+        </section>
 
         <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold">Fields</h2>
@@ -1220,7 +1349,8 @@ export function EndpointDetailEditor({ endpointId }: { endpointId: string }) {
               })
             ) : (
               <p className="rounded-md border border-[var(--line)] p-4 text-sm text-[var(--muted)]">
-                No fields yet.
+                No fields yet. POST endpoints need fields so visitors know what
+                to submit.
               </p>
             )}
           </div>
@@ -1350,7 +1480,8 @@ export function EndpointDetailEditor({ endpointId }: { endpointId: string }) {
               })
             ) : (
               <p className="rounded-md border border-[var(--line)] p-4 text-sm text-[var(--muted)]">
-                No boundaries yet.
+                No boundaries yet. Boundaries help visitors understand what is
+                welcome before they reach out.
               </p>
             )}
           </div>

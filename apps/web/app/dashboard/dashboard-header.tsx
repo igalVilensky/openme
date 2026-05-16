@@ -1,5 +1,11 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { ApiClientError } from "@/lib/api-client";
+import { getCurrentUser } from "@/lib/auth-client";
+import type { AuthSession } from "@/lib/auth-client";
 import { LogoutButton } from "./logout-button";
 
 type DashboardHeaderProps = {
@@ -39,6 +45,37 @@ const navItems: Array<{
 ];
 
 export function DashboardHeader({ active }: DashboardHeaderProps) {
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSession() {
+      try {
+        const nextSession = await getCurrentUser();
+
+        if (isMounted) {
+          setSession(nextSession);
+        }
+      } catch (error) {
+        if (
+          isMounted &&
+          !(error instanceof ApiClientError && error.status === 401)
+        ) {
+          setSession(null);
+        }
+      }
+    }
+
+    loadSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const profileHref = session ? `/${session.profile.username}` : "/demo";
+
   return (
     <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-center sm:justify-between">
       <Link href="/dashboard" className="text-base font-semibold">
@@ -59,12 +96,12 @@ export function DashboardHeader({ active }: DashboardHeaderProps) {
           </Link>
         ))}
         <Link
-          href="/demo"
+          href={profileHref}
           className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)]"
         >
-          Demo profile
+          {session ? "Public profile" : "Demo profile"}
         </Link>
-        <LogoutButton />
+        {session ? <LogoutButton /> : null}
       </div>
     </header>
   );

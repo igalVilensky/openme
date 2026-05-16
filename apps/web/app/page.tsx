@@ -1,9 +1,19 @@
 import Link from "next/link";
 
-const endpointExamples = [
-  { method: "GET", path: "/now", tone: "text-[var(--ink-blue)]" },
-  { method: "POST", path: "/collaborate", tone: "text-[var(--accent)]" },
-  { method: "POST", path: "/ask-me", tone: "text-[var(--signal)]" }
+const visitorActions = [
+  "ask a question",
+  "suggest a collaboration",
+  "send feedback",
+  "offer help",
+  "pitch an idea",
+];
+
+const mvpCapabilities = [
+  "Profile links",
+  "Custom endpoints",
+  "Boundaries",
+  "Inbox",
+  "AI-assisted summaries",
 ];
 
 export default function HomePage() {
@@ -19,13 +29,13 @@ export default function HomePage() {
               href="/demo"
               className="rounded-md px-3 py-2 transition hover:bg-white"
             >
-              Public profile
+              Demo
             </Link>
             <Link
-              href="/dashboard"
+              href="/login"
               className="rounded-md bg-[var(--foreground)] px-3 py-2 text-white transition hover:bg-[var(--accent-strong)]"
             >
-              Dashboard
+              Log in
             </Link>
           </nav>
         </header>
@@ -33,27 +43,43 @@ export default function HomePage() {
         <section className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
           <div className="max-w-2xl">
             <p className="mb-4 text-sm font-medium uppercase text-[var(--accent)]">
-              Actionable bio pages
+              MVP public interaction menu
             </p>
             <h1 className="text-5xl font-semibold leading-[1.02] tracking-[0] text-balance sm:text-6xl">
-              OpenMe
+              OpenMe is a public interaction menu for people.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-[var(--muted)]">
-              Links show where someone is. OpenMe shows what people can do with
-              them through clear public endpoints.
+              Instead of only showing links, it lets visitors understand what
+              they can do with you.
             </p>
+            <ul className="mt-5 grid max-w-xl gap-2 text-sm leading-6 text-[var(--muted)] sm:grid-cols-2">
+              {visitorActions.map((action) => (
+                <li
+                  key={action}
+                  className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                >
+                  {action}
+                </li>
+              ))}
+            </ul>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/demo"
                 className="rounded-md bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white transition hover:bg-[var(--accent-strong)]"
               >
-                View sample profile
+                View demo profile
               </Link>
               <Link
-                href="/demo/collaborate"
+                href="/login"
                 className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm font-medium transition hover:border-[var(--accent)]"
               >
-                Open sample endpoint
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm font-medium transition hover:border-[var(--accent)]"
+              >
+                Create account
               </Link>
             </div>
           </div>
@@ -69,24 +95,22 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {endpointExamples.map((endpoint) => (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {mvpCapabilities.map((capability) => (
                 <div
-                  key={endpoint.path}
-                  className="grid grid-cols-[4.5rem_1fr] items-center gap-3 rounded-md border border-[var(--line)] px-3 py-3"
+                  key={capability}
+                  className="rounded-md border border-[var(--line)] bg-white px-3 py-3 text-sm"
                 >
-                  <span className={`text-xs font-semibold ${endpoint.tone}`}>
-                    {endpoint.method}
-                  </span>
-                  <span className="font-mono text-sm">{endpoint.path}</span>
+                  {capability}
                 </div>
               ))}
             </div>
 
             <div className="mt-4 rounded-md bg-[#f2efe7] p-4">
-              <p className="text-sm font-medium">Boundary</p>
+              <p className="text-sm font-medium">Honest MVP scope</p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Keep requests specific, respectful, and easy to answer.
+                OpenMe has the core loop today. Payments, email sending, and
+                advanced automation are not implemented yet.
               </p>
             </div>
           </div>

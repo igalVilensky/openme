@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { ApiClientError, apiBaseUrl } from "@/lib/api-client";
+import { ApiClientError } from "@/lib/api-client";
 import { getCurrentUser } from "@/lib/auth-client";
 import type { AuthSession } from "@/lib/auth-client";
 
@@ -91,26 +91,26 @@ export function DashboardHome() {
   const dashboardItems = [
     {
       label: "Profile",
-      value: "Public",
-      detail: "Edit public profile fields",
+      value: "Identity",
+      detail: "Edit public identity",
       href: "/dashboard/profile",
     },
     {
       label: "Links",
-      value: "Manage",
-      detail: "Create and reorder public links",
+      value: "Links",
+      detail: "Manage public links",
       href: "/dashboard/links",
     },
     {
       label: "Endpoints",
-      value: "Build",
-      detail: "Manage interaction endpoints",
+      value: "Create",
+      detail: "Create interaction endpoints",
       href: "/dashboard/endpoints",
     },
     {
       label: "Inbox",
-      value: "Open",
-      detail: "Review owner-scoped submissions",
+      value: "Review",
+      detail: "Review submissions",
       href: "/dashboard/inbox",
     },
     {
@@ -119,6 +119,13 @@ export function DashboardHome() {
       detail: `Open @${session.profile.username}`,
       href: publicProfileHref,
     },
+  ];
+  const workflowSteps = [
+    "Shape your profile.",
+    "Add links.",
+    "Create endpoints.",
+    "Share your OpenMe URL.",
+    "Review submissions with AI help.",
   ];
 
   return (
@@ -154,17 +161,17 @@ export function DashboardHome() {
       </div>
 
       <div className="mt-6 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium">API connection</p>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Public client base URL
-            </p>
-          </div>
-          <span className="font-mono text-sm text-[var(--accent)]">
-            {apiBaseUrl}
-          </span>
-        </div>
+        <h2 className="text-sm font-semibold">How OpenMe works</h2>
+        <ol className="mt-4 grid gap-3 text-sm leading-6 text-[var(--muted)] md:grid-cols-5">
+          {workflowSteps.map((step, index) => (
+            <li key={step} className="rounded-md bg-[#fbfaf7] p-3">
+              <span className="block text-xs font-semibold text-[var(--accent)]">
+                {index + 1}
+              </span>
+              <span className="mt-2 block">{step}</span>
+            </li>
+          ))}
+        </ol>
       </div>
     </>
   );

@@ -169,7 +169,9 @@ export async function getPublicEndpointByUsernameAndSlug(
     where: {
       slug,
       status: EndpointStatus.PUBLISHED,
-      visibility: EndpointVisibility.PUBLIC,
+      visibility: {
+        in: [EndpointVisibility.PUBLIC, EndpointVisibility.UNLISTED]
+      },
       profile: {
         username,
         isPublic: true

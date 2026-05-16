@@ -261,7 +261,11 @@ export function LinkEditor() {
   }
 
   async function deleteLink(link: DashboardLink) {
-    if (!window.confirm(`Delete "${link.title}"?`)) {
+    if (
+      !window.confirm(
+        `Delete "${link.title}" permanently? It will be removed from your public profile.`,
+      )
+    ) {
       return;
     }
 
@@ -630,7 +634,8 @@ export function LinkEditor() {
           <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
             <p className="text-sm font-medium">No links yet.</p>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Add the first public profile link above.
+              Links point visitors to places where you already exist, like a
+              portfolio, GitHub, writing, calendar, or social profile.
             </p>
           </div>
         )}

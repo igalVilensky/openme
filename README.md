@@ -2,7 +2,7 @@
 
 OpenMe is an actionable bio page. Instead of only listing where someone can be found, an OpenMe profile shows what people can do with them through personal endpoints such as `/collaborate`, `/ask-me`, and `/feedback`.
 
-The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, email/password owner auth, an authenticated profile editor, dashboard link editor, dashboard endpoint builder, dashboard inbox, and optional AI analysis for new submissions.
+The current MVP core loop is complete: a user can shape a public profile, add links, create interaction endpoints, receive public submissions, review them in an inbox, and use optional AI analysis for summaries and triage.
 
 ## Current MVP Features
 
@@ -20,12 +20,14 @@ The current MVP supports a seeded demo profile at `/demo`, public endpoint submi
 - Authenticated dashboard inbox at `http://localhost:3000/dashboard/inbox`
 - Authenticated users can create, edit, delete, hide/show, and reorder public profile links
 - Authenticated users can manage endpoint metadata, fields, boundaries, status, and order
+- Dashboard navigation, homepage, empty states, and form helper copy are polished for the MVP loop
+- Endpoints with submissions are archived instead of deleted so existing submissions stay safe
 - Submission detail view with status updates
 - Optional AI analysis with summary, intent, boundary status, priority, and suggested reply
 - AI service mock mode by default
 - Groq provider support when configured
 
-If AI analysis fails, the public submission still succeeds.
+If AI analysis fails or is still pending, the public submission still succeeds and the inbox can be refreshed later.
 
 ## Tech Stack
 
@@ -303,7 +305,7 @@ Add, edit, hide/show, reorder with Up/Down buttons, and delete a link. Confirm `
 http://localhost:3000/dashboard/endpoints
 ```
 
-Create an endpoint, open its detail editor, add fields and boundaries, publish it, and confirm `/demo` reflects published public endpoints. Reordering uses Up/Down buttons for now.
+Create an endpoint, open its detail editor, add fields and boundaries, publish it, and confirm `/demo` reflects published public endpoints. Reordering uses Up/Down buttons for now. Archive endpoints that have submissions; delete remains available for endpoints with no submissions.
 
 13. Open the inbox.
 
@@ -315,7 +317,7 @@ http://localhost:3000/dashboard/inbox
 
 15. Confirm the AI analysis appears.
 
-Analysis is fire-and-forget, so it can briefly be pending. Refresh the detail page if needed.
+Analysis is fire-and-forget, so it can briefly be pending. Use the refresh action on the detail page if needed.
 
 ## Useful API Checks
 

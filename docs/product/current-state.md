@@ -1,6 +1,6 @@
 # Current State
 
-This document captures the state of the OpenMe MVP after adding the authenticated dashboard endpoint builder.
+This document captures the state of the OpenMe MVP after completing the core loop and polishing the dashboard, homepage, navigation, and safety copy.
 
 ## Completed Features
 
@@ -19,6 +19,9 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 - Owner-scoped link create, edit, delete, visible/hidden toggle, and Up/Down reordering
 - Authenticated dashboard endpoint builder at `/dashboard/endpoints`
 - Owner-scoped endpoint metadata, field, boundary, publish/archive, delete, and Up/Down reorder flows
+- Endpoint delete safety: endpoints with submissions should be archived, while delete remains available for endpoints with no submissions
+- Published unlisted endpoints are accessible by direct URL but are not shown on the public profile
+- Polished dashboard home, root homepage, shared dashboard navigation, empty states, and form helper copy
 - Dashboard inbox list at `/dashboard/inbox`
 - Dashboard submission detail page
 - Submission status updates
@@ -49,6 +52,7 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 17. The owner opens `/dashboard/inbox`.
 18. `apps/api` scopes the inbox to the authenticated owner's profile.
 19. The owner opens a submission detail page and sees the analysis if it has completed.
+20. If analysis is not available yet, the owner sees a pending-state message and can refresh.
 
 ## Current Architecture Status
 
@@ -71,7 +75,7 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 - Legacy demo inbox routes remain available at `/dashboard/demo/inbox` for local compatibility.
 - No production deployment config yet.
 - AI service is not protected by auth or a service token yet.
-- AI analysis is fire-and-forget, so analysis can briefly be pending.
+- AI analysis is fire-and-forget, so analysis can briefly be pending; the inbox detail explains this state.
 
 ## Known Limitations
 
@@ -81,7 +85,7 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 - New accounts can log in and edit public profile fields, profile links, and endpoints.
 - There are no automated end-to-end tests yet.
 - AI analysis has no retry queue.
-- AI analysis can be delayed or absent if the AI service is offline.
+- AI analysis can be delayed or absent if the AI service is offline or disabled.
 - Groq responses are validated and fall back to mock, but there is no provider observability beyond server logs.
 - No rate limiting or abuse protection yet.
 - No production secrets management yet.
@@ -94,7 +98,6 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 - Add OAuth, password reset, and email verification when the MVP auth path is stable enough to justify them.
 - Add a service token or private network boundary for `apps/ai-service`.
 - Add automated tests for public submission creation, inbox reads, and AI fallback behavior.
-- Add explicit pending/complete analysis state in the inbox UI.
 - Add production deployment configuration.
 - Add rate limiting for public submission endpoints.
 - Add structured logging for API and AI service failures.

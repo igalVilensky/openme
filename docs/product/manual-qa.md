@@ -59,6 +59,16 @@ curl http://localhost:4000/health
 
 Expected: `{"status":"ok"}`.
 
+## Homepage Checks
+
+- Open the root homepage in the browser.
+
+```text
+http://localhost:3000/
+```
+
+Expected: the page explains OpenMe as an MVP public interaction menu and shows working CTAs for `/demo`, `/login`, and `/register`.
+
 ## Auth Checks
 
 - Confirm unauthenticated dashboard access is rejected.
@@ -325,7 +335,7 @@ Expected: HTTP 201 and the response includes `position`, counts, `createdAt`, an
 curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/endpoints/ENDPOINT_ID
 ```
 
-Expected: metadata, fields, boundaries, `createdAt`, and `updatedAt` are returned.
+Expected: metadata, `submissionCount`, fields, boundaries, `createdAt`, and `updatedAt` are returned.
 
 - Add a required long-text field.
 
@@ -370,6 +380,16 @@ curl -i \
 ```
 
 Expected: HTTP 201 and a `Submission received` response.
+
+- Confirm submitted endpoints cannot be deleted directly.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X DELETE http://localhost:4000/dashboard/endpoints/ENDPOINT_ID
+```
+
+Expected: HTTP 409 with `Endpoint has submissions. Archive it instead.`
 
 - Edit endpoint metadata.
 
@@ -429,7 +449,7 @@ http://localhost:3000/dashboard/endpoints
 
 - Create `test-idea`, open its detail editor, add the long-text field and boundary above, publish it, submit from `/demo/test-idea`, then archive it.
 
-Expected: the dashboard shows loading, saving, success, and error states; reordering uses Up/Down buttons; no drag-and-drop or conditional fields are present.
+Expected: the dashboard shows loading, saving, success, helper copy, and error states. Endpoints with submissions show archive-focused safety copy instead of delete. Reordering uses Up/Down buttons; no drag-and-drop or conditional fields are present.
 
 ## AI Service Health Checks
 
@@ -659,4 +679,4 @@ pnpm --filter @openme/web lint
 
 - Confirm public submission creation still succeeds when AI service is stopped.
 
-- Confirm inbox detail naturally shows analysis when it exists.
+- Confirm inbox detail naturally shows analysis when it exists, or a pending message with a refresh action when analysis is not available yet.

@@ -168,7 +168,7 @@ export async function createPublicSubmission(
 
   if (
     endpoint.status !== EndpointStatus.PUBLISHED ||
-    endpoint.visibility !== EndpointVisibility.PUBLIC
+    endpoint.visibility === EndpointVisibility.PRIVATE
   ) {
     throw new HttpError(404, "Public endpoint not found");
   }

@@ -63,6 +63,7 @@ export type DashboardEndpointDetail = {
   visibility: EndpointVisibility;
   status: EndpointStatus;
   position: number;
+  submissionCount: number;
   fields: DashboardEndpointFieldResponse[];
   boundaries: DashboardEndpointBoundaryResponse[];
   createdAt: string;
@@ -109,6 +110,9 @@ type BoundaryRecord = {
 };
 
 type EndpointDetailRecord = Omit<EndpointSummaryRecord, "_count"> & {
+  _count: {
+    submissions: number;
+  };
   fields: FieldRecord[];
   boundaries: BoundaryRecord[];
 };
@@ -121,6 +125,15 @@ type MutationResult<TValue> =
   | {
       ok: false;
       reason: "NOT_FOUND" | "SLUG_CONFLICT" | "INVALID_FIELD_OPTIONS";
+    };
+
+type DeleteEndpointResult =
+  | {
+      ok: true;
+    }
+  | {
+      ok: false;
+      reason: "NOT_FOUND" | "HAS_SUBMISSIONS";
     };
 
 type ReorderResult<TValue> =
@@ -185,6 +198,11 @@ const endpointDetailSelect = {
   position: true,
   createdAt: true,
   updatedAt: true,
+  _count: {
+    select: {
+      submissions: true,
+    },
+  },
   fields: {
     orderBy: [
       { position: "asc" },
@@ -257,6 +275,7 @@ function toEndpointDetail(endpoint: EndpointDetailRecord): DashboardEndpointDeta
     visibility: endpoint.visibility,
     status: endpoint.status,
     position: endpoint.position,
+    submissionCount: endpoint._count.submissions,
     fields: endpoint.fields.map(toFieldResponse),
     boundaries: endpoint.boundaries.map(toBoundaryResponse),
     createdAt: endpoint.createdAt.toISOString(),
@@ -452,7 +471,7 @@ export async function updateDashboardEndpoint(
 export async function deleteDashboardEndpoint(
   profileId: string,
   endpointId: string,
-): Promise<boolean> {
+): Promise<DeleteEndpointResult> {
   const existingEndpoint = await prisma.endpoint.findFirst({
     where: {
       id: endpointId,
@@ -460,11 +479,26 @@ export async function deleteDashboardEndpoint(
     },
     select: {
       id: true,
+      _count: {
+        select: {
+          submissions: true,
+        },
+      },
     },
   });
 
   if (!existingEndpoint) {
-    return false;
+    return {
+      ok: false,
+      reason: "NOT_FOUND",
+    };
+  }
+
+  if (existingEndpoint._count.submissions > 0) {
+    return {
+      ok: false,
+      reason: "HAS_SUBMISSIONS",
+    };
   }
 
   await prisma.endpoint.delete({
@@ -473,7 +507,9 @@ export async function deleteDashboardEndpoint(
     },
   });
 
-  return true;
+  return {
+    ok: true,
+  };
 }
 
 export async function reorderDashboardEndpoints(

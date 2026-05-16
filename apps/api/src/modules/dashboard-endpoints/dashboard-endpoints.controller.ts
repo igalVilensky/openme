@@ -152,12 +152,16 @@ export const deleteDashboardEndpointById: RequestHandler = async (
 ) => {
   try {
     const auth = getRequiredAuth(req);
-    const didDelete = await deleteDashboardEndpoint(
+    const result = await deleteDashboardEndpoint(
       auth.profile.id,
       req.params.endpointId ?? "",
     );
 
-    if (!didDelete) {
+    if (!result.ok) {
+      if (result.reason === "HAS_SUBMISSIONS") {
+        throw new HttpError(409, "Endpoint has submissions. Archive it instead.");
+      }
+
       throw new HttpError(404, "Dashboard endpoint not found");
     }
 

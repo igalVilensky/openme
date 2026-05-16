@@ -29,6 +29,10 @@ function buttonClass() {
   return "rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60";
 }
 
+function dangerButtonClass() {
+  return "rounded-md border border-[#d19a7a] bg-white px-3 py-2 text-sm font-medium text-[#7a341b] transition hover:bg-[#fff8f2] disabled:cursor-not-allowed disabled:opacity-60";
+}
+
 function LoginPrompt() {
   return (
     <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
@@ -79,6 +83,7 @@ function mergeEndpointDetail(
     visibility: detail.visibility,
     status: detail.status,
     position: detail.position,
+    submissionCount: detail.submissionCount,
     updatedAt: detail.updatedAt,
   };
 }
@@ -108,6 +113,9 @@ function MetadataFormFields({
           value={form.slug}
           onChange={(event) => onChange("slug", event.target.value)}
         />
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          Used in your public URL. Example: mentor-me.
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="endpoint-title">
@@ -144,6 +152,9 @@ function MetadataFormFields({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          POST = visitors submit something. GET = read-only info page.
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="endpoint-visibility">
@@ -166,6 +177,9 @@ function MetadataFormFields({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          PUBLIC = shown on profile. UNLISTED = direct URL. PRIVATE = hidden.
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="endpoint-status">
@@ -188,6 +202,10 @@ function MetadataFormFields({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          DRAFT = not public. PUBLISHED = available if visibility allows.
+          ARCHIVED = hidden but kept.
+        </p>
       </div>
       <div className="lg:col-span-2">
         <label className="text-sm font-medium" htmlFor="endpoint-description">
@@ -407,7 +425,11 @@ export function EndpointList() {
   }
 
   async function deleteEndpoint(endpoint: DashboardEndpointSummary) {
-    if (!window.confirm(`Delete "${endpoint.title}"?`)) {
+    if (
+      !window.confirm(
+        `Delete "${endpoint.title}" permanently? This removes the endpoint and cannot be undone.`,
+      )
+    ) {
       return;
     }
 
@@ -559,6 +581,9 @@ export function EndpointList() {
         onSubmit={handleCreate}
       >
         <h2 className="text-sm font-semibold">Create endpoint</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          Archive keeps submissions; delete removes the endpoint permanently.
+        </p>
         <div className="mt-4">
           <MetadataFormFields form={newEndpointForm} onChange={updateNewForm} />
         </div>
@@ -579,6 +604,7 @@ export function EndpointList() {
             const isReordering = pendingAction === `reorder:${endpoint.id}`;
             const isDeleting = pendingAction === `delete:${endpoint.id}`;
             const isSavingEdit = pendingAction === `edit:${endpoint.id}`;
+            const hasSubmissions = endpoint.submissionCount > 0;
 
             return (
               <article
@@ -663,7 +689,8 @@ export function EndpointList() {
                         {isReordering ? "Moving..." : "Down"}
                       </button>
                       {endpointStatuses.map((status) =>
-                        status === endpoint.status ? null : (
+                        status === endpoint.status ||
+                        (hasSubmissions && status === "ARCHIVED") ? null : (
                           <button
                             key={status}
                             className={buttonClass()}
@@ -694,17 +721,37 @@ export function EndpointList() {
                       </Link>
                       {isPublicEndpoint(endpoint) ? (
                         <Link className={buttonClass()} href={publicHref}>
-                          Public
+                          Open URL
                         </Link>
                       ) : null}
-                      <button
-                        className="rounded-md border border-[#d19a7a] bg-white px-3 py-2 text-sm font-medium text-[#7a341b] transition hover:bg-[#fff8f2] disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isBusy}
-                        type="button"
-                        onClick={() => deleteEndpoint(endpoint)}
-                      >
-                        {isDeleting ? "Deleting..." : "Delete"}
-                      </button>
+                      {hasSubmissions ? (
+                        endpoint.status === "ARCHIVED" ? (
+                          <span className="rounded-md border border-[var(--line)] bg-[#f2efe7] px-3 py-2 text-sm text-[var(--muted)]">
+                            Submissions kept
+                          </span>
+                        ) : (
+                          <button
+                            className={buttonClass()}
+                            disabled={isBusy}
+                            type="button"
+                            onClick={() => updateStatus(endpoint, "ARCHIVED")}
+                          >
+                            {pendingAction ===
+                            `status:${endpoint.id}:ARCHIVED`
+                              ? "Archiving..."
+                              : "Archive"}
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          className={dangerButtonClass()}
+                          disabled={isBusy}
+                          type="button"
+                          onClick={() => deleteEndpoint(endpoint)}
+                        >
+                          {isDeleting ? "Deleting..." : "Delete"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -715,7 +762,8 @@ export function EndpointList() {
           <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
             <p className="text-sm font-medium">No endpoints yet.</p>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Create the first interaction endpoint above.
+              Create interaction endpoints such as ask-me, collaborate, or
+              feedback so visitors know what they can do with you.
             </p>
           </div>
         )}

@@ -180,8 +180,8 @@ export function InboxList() {
       <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
         <p className="text-sm font-medium">No submissions yet.</p>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          New endpoint responses for your profile will appear here. Profile and
-          endpoint builders arrive later.
+          Submissions appear here after visitors use your published POST
+          endpoints.
         </p>
         <Link
           href="/demo/collaborate"

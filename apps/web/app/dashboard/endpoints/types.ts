@@ -66,6 +66,7 @@ export type DashboardEndpointDetail = {
   visibility: EndpointVisibility;
   status: EndpointStatus;
   position: number;
+  submissionCount: number;
   fields: DashboardEndpointField[];
   boundaries: DashboardEndpointBoundary[];
   createdAt: string;
@@ -190,5 +191,5 @@ export function getMetadataPayload(form: EndpointMetadataFormState) {
 export function isPublicEndpoint(
   endpoint: Pick<DashboardEndpointSummary, "status" | "visibility">,
 ): boolean {
-  return endpoint.status === "PUBLISHED" && endpoint.visibility === "PUBLIC";
+  return endpoint.status === "PUBLISHED" && endpoint.visibility !== "PRIVATE";
 }

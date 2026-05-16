@@ -510,9 +510,20 @@ export function SubmissionDetail({ submissionId }: { submissionId: string }) {
                 </div>
               </dl>
             ) : (
-              <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                Analysis has not been generated for this submission.
-              </p>
+              <div className="mt-3 space-y-3">
+                <p className="text-sm leading-6 text-[var(--muted)]">
+                  Analysis is not available yet. Refresh in a moment, or AI may
+                  be disabled.
+                </p>
+                <button
+                  className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium transition hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isRefreshing}
+                  type="button"
+                  onClick={refreshSubmission}
+                >
+                  {isRefreshing ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
             )}
           </section>
 
