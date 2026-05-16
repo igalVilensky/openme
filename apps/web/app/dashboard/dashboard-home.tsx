@@ -7,26 +7,6 @@ import { ApiClientError, apiBaseUrl } from "@/lib/api-client";
 import { getCurrentUser } from "@/lib/auth-client";
 import type { AuthSession } from "@/lib/auth-client";
 
-const dashboardItemBase = [
-  {
-    label: "Profile",
-    value: "Public",
-    detail: "Edit public profile fields",
-    href: "/dashboard/profile",
-  },
-  {
-    label: "Endpoints",
-    value: "Later",
-    detail: "Endpoint builder arrives later",
-  },
-  {
-    label: "Inbox",
-    value: "Open",
-    detail: "Review owner-scoped submissions",
-    href: "/dashboard/inbox",
-  },
-];
-
 function LoginPrompt() {
   return (
     <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
@@ -108,10 +88,32 @@ export function DashboardHome() {
   }
 
   const publicProfileHref = `/${session.profile.username}`;
-  const dashboardItems = dashboardItemBase.map((item) => ({
-    ...item,
-    href: item.href ?? publicProfileHref,
-  }));
+  const dashboardItems = [
+    {
+      label: "Profile",
+      value: "Public",
+      detail: "Edit public profile fields",
+      href: "/dashboard/profile",
+    },
+    {
+      label: "Links",
+      value: "Manage",
+      detail: "Create and reorder public links",
+      href: "/dashboard/links",
+    },
+    {
+      label: "Inbox",
+      value: "Open",
+      detail: "Review owner-scoped submissions",
+      href: "/dashboard/inbox",
+    },
+    {
+      label: "Public profile",
+      value: "View",
+      detail: `Open @${session.profile.username}`,
+      href: publicProfileHref,
+    },
+  ];
 
   return (
     <>
@@ -127,7 +129,7 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {dashboardItems.map((item) => (
           <Link
             key={item.label}

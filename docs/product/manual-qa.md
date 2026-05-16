@@ -66,6 +66,7 @@ Expected: `{"status":"ok"}`.
 ```bash
 curl -i http://localhost:4000/auth/me
 curl -i http://localhost:4000/dashboard/profile
+curl -i http://localhost:4000/dashboard/links
 curl -i http://localhost:4000/dashboard/inbox
 ```
 
@@ -111,6 +112,15 @@ curl -i -b /tmp/openme-cookies.txt -c /tmp/openme-cookies.txt \
 Expected: HTTP 200 and the auth cookie is cleared.
 
 ## Profile Editor Checks
+
+- Log back in as the local-only demo user if the auth checks cleared the cookie.
+
+```bash
+curl -i -c /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@openme.local","password":"password123"}'
+```
 
 - Fetch the authenticated owner profile with the demo login cookie.
 
@@ -162,7 +172,129 @@ Expected: a save success message appears with a link to the public profile.
 http://localhost:3000/demo
 ```
 
-Expected: saved profile fields are visible. Username, links, endpoints, and avatar uploads are not editable yet.
+Expected: saved profile fields are visible. Username, endpoints, and avatar uploads are not editable yet.
+
+## Link Editor Checks
+
+- Fetch the authenticated owner links with the demo login cookie.
+
+```bash
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/links
+```
+
+Expected: the seeded demo links are returned ordered by `position`.
+
+- Create a new visible link.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/dashboard/links \
+  -H "Content-Type: application/json" \
+  -d '{"title":"QA Link","url":"https://example.com/qa","isVisible":true}'
+```
+
+Expected: HTTP 201 and the response includes `position`, `isVisible`, `createdAt`, and `updatedAt`.
+
+- Confirm invalid links are rejected.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/dashboard/links \
+  -H "Content-Type: application/json" \
+  -d '{"title":"","url":"ftp://example.com"}'
+```
+
+Expected: HTTP 400 validation error.
+
+- Pick the created link ID and edit it.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/links/LINK_ID \
+  -H "Content-Type: application/json" \
+  -d '{"title":"QA Link Updated","url":"https://example.com/qa-updated"}'
+```
+
+Expected: HTTP 200 and the updated title and URL are returned.
+
+- Hide the link.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/links/LINK_ID \
+  -H "Content-Type: application/json" \
+  -d '{"isVisible":false}'
+```
+
+- Fetch the public demo profile.
+
+```bash
+curl http://localhost:4000/public/profiles/demo
+```
+
+Expected: the hidden link is not included in `links`.
+
+- Show the link again.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/links/LINK_ID \
+  -H "Content-Type: application/json" \
+  -d '{"isVisible":true}'
+```
+
+Expected: the link appears again in the public profile response.
+
+- Reorder links by sending all current link IDs in the desired order.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/links/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"orderedIds":["LINK_ID_1","LINK_ID_2","LINK_ID_3"]}'
+```
+
+Expected: HTTP 200 and returned links have positions matching the array order.
+
+- Confirm incomplete reorder payloads are rejected.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/links/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"orderedIds":["LINK_ID_1"]}'
+```
+
+Expected: HTTP 400 validation error.
+
+- Delete the created link.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X DELETE http://localhost:4000/dashboard/links/LINK_ID
+```
+
+Expected: HTTP 200 with `{"success":true}` and the link no longer appears on `/demo`.
+
+- Open the link editor in the browser.
+
+```text
+http://localhost:3000/dashboard/links
+```
+
+- If prompted, log in with `demo@openme.local` / `password123`.
+
+- Add a link, edit it, hide it, show it, move it with Up/Down buttons, and delete it.
+
+Expected: success or saving states appear for each action, and `http://localhost:3000/demo` reflects visible links and their order.
 
 ## AI Service Health Checks
 
@@ -205,6 +337,7 @@ curl http://localhost:4000/public/profiles/demo
 ```text
 username: demo
 displayName: Demo User
+visible links only
 endpoints including collaborate, ask-me, and feedback
 ```
 
@@ -384,7 +517,7 @@ pnpm --filter @openme/web lint
 - Run a full manual submission flow:
 
 ```text
-/demo/collaborate -> submit form -> /login -> /dashboard/profile -> save profile -> /dashboard/inbox -> open detail
+/demo/collaborate -> submit form -> /login -> /dashboard/profile -> save profile -> /dashboard/links -> manage links -> /dashboard/inbox -> open detail
 ```
 
 - Confirm logged-out dashboard pages show a login prompt or redirect path.
