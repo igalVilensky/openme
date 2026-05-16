@@ -56,6 +56,25 @@ Step by step:
 
 Legacy demo-only inbox routes remain temporarily available under `/dashboard/demo/inbox` for local compatibility. The dashboard UI uses the authenticated owner routes.
 
+## Dashboard Endpoint Builder Flow
+
+```text
+apps/web -> apps/api auth middleware -> PostgreSQL -> public profile/submission flow
+```
+
+Step by step:
+
+1. The owner opens `/dashboard/endpoints` or `/dashboard/endpoints/:endpointId`.
+2. Dashboard pages call authenticated `/dashboard/endpoints` routes with credentials included.
+3. `apps/api` verifies the HTTP-only auth cookie.
+4. Auth middleware attaches the current user/profile to the request.
+5. Endpoint, field, boundary, delete, and reorder queries filter through the authenticated profile id.
+6. If an endpoint, field, or boundary does not belong to the authenticated profile, the API returns HTTP 404.
+7. Published public endpoints appear on `/[username]` when `status=PUBLISHED` and `visibility=PUBLIC`.
+8. Public POST endpoint submissions continue through the public submission flow and optional AI analysis.
+
+Endpoint and field reordering currently use Up/Down controls in the dashboard UI. Drag-and-drop and conditional field logic are not implemented yet.
+
 ## When AI_ENABLED=false
 
 When `AI_ENABLED=false`, `apps/api` does not call `apps/ai-service`.

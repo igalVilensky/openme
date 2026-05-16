@@ -2,7 +2,7 @@
 
 OpenMe is an actionable bio page. Instead of only listing where someone can be found, an OpenMe profile shows what people can do with them through personal endpoints such as `/collaborate`, `/ask-me`, and `/feedback`.
 
-The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, email/password owner auth, an authenticated profile editor, dashboard link editor, dashboard inbox, and optional AI analysis for new submissions.
+The current MVP supports a seeded demo profile at `/demo`, public endpoint submissions, email/password owner auth, an authenticated profile editor, dashboard link editor, dashboard endpoint builder, dashboard inbox, and optional AI analysis for new submissions.
 
 ## Current MVP Features
 
@@ -16,8 +16,10 @@ The current MVP supports a seeded demo profile at `/demo`, public endpoint submi
 - Login and register pages at `http://localhost:3000/login` and `http://localhost:3000/register`
 - Authenticated profile editor at `http://localhost:3000/dashboard/profile`
 - Authenticated link editor at `http://localhost:3000/dashboard/links`
+- Authenticated endpoint builder at `http://localhost:3000/dashboard/endpoints`
 - Authenticated dashboard inbox at `http://localhost:3000/dashboard/inbox`
 - Authenticated users can create, edit, delete, hide/show, and reorder public profile links
+- Authenticated users can manage endpoint metadata, fields, boundaries, status, and order
 - Submission detail view with status updates
 - Optional AI analysis with summary, intent, boundary status, priority, and suggested reply
 - AI service mock mode by default
@@ -38,7 +40,7 @@ If AI analysis fails, the public submission still succeeds.
 
 ```text
 apps/
-  api/          Express API, Prisma schema, auth, profile, links, public submission, and inbox routes
+  api/          Express API, Prisma schema, auth, profile, links, endpoints, public submission, and inbox routes
   web/          Next.js app for public pages and dashboard UI
   ai-service/   FastAPI service for mock or Groq-powered submission analysis
 docs/
@@ -215,6 +217,7 @@ Open:
 http://localhost:3000/demo
 http://localhost:3000/login
 http://localhost:3000/dashboard/links
+http://localhost:3000/dashboard/endpoints
 ```
 
 ## Full Manual Flow
@@ -278,7 +281,7 @@ demo@openme.local / password123
 http://localhost:3000/dashboard/profile
 ```
 
-Username editing, endpoint building, and avatar uploads are not implemented yet.
+Username editing, avatar uploads, drag-and-drop endpoint ordering, and conditional fields are not implemented yet.
 
 10. Open the public profile and confirm saved profile fields changed.
 
@@ -294,15 +297,23 @@ http://localhost:3000/dashboard/links
 
 Add, edit, hide/show, reorder with Up/Down buttons, and delete a link. Confirm `/demo` reflects visible links and their order.
 
-12. Open the inbox.
+12. Open the endpoint builder and manage public interaction endpoints.
+
+```text
+http://localhost:3000/dashboard/endpoints
+```
+
+Create an endpoint, open its detail editor, add fields and boundaries, publish it, and confirm `/demo` reflects published public endpoints. Reordering uses Up/Down buttons for now.
+
+13. Open the inbox.
 
 ```text
 http://localhost:3000/dashboard/inbox
 ```
 
-13. Open the new submission detail page.
+14. Open the new submission detail page.
 
-14. Confirm the AI analysis appears.
+15. Confirm the AI analysis appears.
 
 Analysis is fire-and-forget, so it can briefly be pending. Refresh the detail page if needed.
 
@@ -320,6 +331,7 @@ curl -i -c /tmp/openme-cookies.txt \
 curl -b /tmp/openme-cookies.txt http://localhost:4000/auth/me
 curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/profile
 curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/links
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/endpoints
 curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/inbox
 ```
 

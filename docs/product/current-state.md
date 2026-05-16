@@ -1,6 +1,6 @@
 # Current State
 
-This document captures the state of the OpenMe MVP after adding the authenticated dashboard link editor.
+This document captures the state of the OpenMe MVP after adding the authenticated dashboard endpoint builder.
 
 ## Completed Features
 
@@ -17,6 +17,8 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 - Authenticated profile editor at `/dashboard/profile`
 - Authenticated dashboard link editor at `/dashboard/links`
 - Owner-scoped link create, edit, delete, visible/hidden toggle, and Up/Down reordering
+- Authenticated dashboard endpoint builder at `/dashboard/endpoints`
+- Owner-scoped endpoint metadata, field, boundary, publish/archive, delete, and Up/Down reorder flows
 - Dashboard inbox list at `/dashboard/inbox`
 - Dashboard submission detail page
 - Submission status updates
@@ -41,14 +43,17 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 11. The public profile page reflects saved profile changes.
 12. The owner can manage public profile links at `/dashboard/links`.
 13. The public profile page reflects visible links and their saved order.
-14. The owner opens `/dashboard/inbox`.
-15. `apps/api` scopes the inbox to the authenticated owner's profile.
-16. The owner opens a submission detail page and sees the analysis if it has completed.
+14. The owner can manage interaction endpoints at `/dashboard/endpoints`.
+15. The public profile page reflects published public endpoints and their saved order.
+16. Visitors can submit newly created public POST endpoints.
+17. The owner opens `/dashboard/inbox`.
+18. `apps/api` scopes the inbox to the authenticated owner's profile.
+19. The owner opens a submission detail page and sees the analysis if it has completed.
 
 ## Current Architecture Status
 
 - `apps/web` owns public pages and dashboard UI.
-- `apps/api` owns auth, validation, persistence, owner profile APIs, public profile APIs, public submission APIs, and owner-scoped inbox APIs.
+- `apps/api` owns auth, validation, persistence, owner profile APIs, owner link and endpoint APIs, public profile APIs, public submission APIs, and owner-scoped inbox APIs.
 - `apps/ai-service` owns analysis and is the only app that can call Groq.
 - PostgreSQL is the system of record.
 - Prisma defines the relational schema and generated API client types.
@@ -60,10 +65,10 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 
 - Auth is MVP email/password only. OAuth, reset flows, and email verification are not implemented.
 - Profile editing covers core public profile fields only.
-- Link reordering uses Up/Down buttons. Drag-and-drop is not implemented yet.
-- Username editing, avatar uploads, and endpoint building are not implemented yet.
+- Link and endpoint reordering use Up/Down buttons. Drag-and-drop is not implemented yet.
+- Endpoint fields are simple flat fields. Conditional field logic is not implemented yet.
+- Username editing and avatar uploads are not implemented yet.
 - Legacy demo inbox routes remain available at `/dashboard/demo/inbox` for local compatibility.
-- No endpoint builder yet.
 - No production deployment config yet.
 - AI service is not protected by auth or a service token yet.
 - AI analysis is fire-and-forget, so analysis can briefly be pending.
@@ -72,8 +77,8 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 
 - The seeded demo user is still the main local end-to-end example.
 - The demo user is local-only test data: `demo@openme.local` / `password123`.
-- Public endpoint fields and boundaries are seeded, not user-managed.
-- New accounts can log in and edit public profile fields and profile links, but they do not create endpoints yet.
+- Public endpoint fields and boundaries can be owner-managed, but there is no advanced field logic yet.
+- New accounts can log in and edit public profile fields, profile links, and endpoints.
 - There are no automated end-to-end tests yet.
 - AI analysis has no retry queue.
 - AI analysis can be delayed or absent if the AI service is offline.
@@ -84,7 +89,7 @@ This document captures the state of the OpenMe MVP after adding the authenticate
 
 ## Next Recommended Steps
 
-- Build endpoint builder flows.
+- Add conditional field logic only if the core endpoint builder needs it.
 - Add username editing after deciding handle-change rules and redirects.
 - Add OAuth, password reset, and email verification when the MVP auth path is stable enough to justify them.
 - Add a service token or private network boundary for `apps/ai-service`.

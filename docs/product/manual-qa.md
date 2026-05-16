@@ -67,6 +67,7 @@ Expected: `{"status":"ok"}`.
 curl -i http://localhost:4000/auth/me
 curl -i http://localhost:4000/dashboard/profile
 curl -i http://localhost:4000/dashboard/links
+curl -i http://localhost:4000/dashboard/endpoints
 curl -i http://localhost:4000/dashboard/inbox
 ```
 
@@ -296,6 +297,140 @@ http://localhost:3000/dashboard/links
 
 Expected: success or saving states appear for each action, and `http://localhost:3000/demo` reflects visible links and their order.
 
+## Endpoint Builder Checks
+
+- Fetch the authenticated owner endpoints with the demo login cookie.
+
+```bash
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/endpoints
+```
+
+Expected: seeded demo endpoints are returned ordered by `position`, with field, boundary, and submission counts.
+
+- Create a published public POST endpoint.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/dashboard/endpoints \
+  -H "Content-Type: application/json" \
+  -d '{"slug":"test-idea","method":"POST","title":"Test idea","description":"Send me an idea","visibility":"PUBLIC","status":"PUBLISHED"}'
+```
+
+Expected: HTTP 201 and the response includes `position`, counts, `createdAt`, and `updatedAt`.
+
+- Open the created endpoint detail.
+
+```bash
+curl -b /tmp/openme-cookies.txt http://localhost:4000/dashboard/endpoints/ENDPOINT_ID
+```
+
+Expected: metadata, fields, boundaries, `createdAt`, and `updatedAt` are returned.
+
+- Add a required long-text field.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/dashboard/endpoints/ENDPOINT_ID/fields \
+  -H "Content-Type: application/json" \
+  -d '{"type":"LONG_TEXT","label":"What is your idea?","helpText":null,"placeholder":"Describe it...","options":null,"required":true}'
+```
+
+Expected: HTTP 201 and the response includes the field at position `0`.
+
+- Add an active boundary.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X POST http://localhost:4000/dashboard/endpoints/ENDPOINT_ID/boundaries \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Specific and respectful","description":"Send a clear idea, not spam.","priority":"MEDIUM","isActive":true}'
+```
+
+Expected: HTTP 201 and the boundary is returned.
+
+- Confirm the endpoint appears publicly.
+
+```bash
+curl http://localhost:4000/public/profiles/demo
+curl http://localhost:4000/public/profiles/demo/endpoints/test-idea
+```
+
+Expected: `/test-idea` appears in the public profile endpoint list and its field/boundary are returned by the public endpoint API.
+
+- Submit to the new endpoint.
+
+```bash
+curl -i \
+  -X POST http://localhost:4000/public/profiles/demo/endpoints/test-idea/submissions \
+  -H "Content-Type: application/json" \
+  -d '{"submitterName":"QA Visitor","submitterEmail":"qa-visitor@example.com","data":{"FIELD_ID":"A focused test idea."},"message":"Optional note."}'
+```
+
+Expected: HTTP 201 and a `Submission received` response.
+
+- Edit endpoint metadata.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/endpoints/ENDPOINT_ID \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated test idea"}'
+```
+
+Expected: HTTP 200 and the public endpoint page reflects the updated title.
+
+- Reorder endpoints by sending all current endpoint IDs in the desired order.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/endpoints/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"orderedIds":["ENDPOINT_ID_1","ENDPOINT_ID_2"]}'
+```
+
+Expected: HTTP 200 and returned endpoint positions match the array order.
+
+- Reorder fields by sending all field IDs for the endpoint.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/endpoints/ENDPOINT_ID/fields/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"orderedIds":["FIELD_ID_1","FIELD_ID_2"]}'
+```
+
+Expected: HTTP 200 when all field IDs for the endpoint are included, or HTTP 400 when the set is incomplete.
+
+- Archive the endpoint.
+
+```bash
+curl -i \
+  -b /tmp/openme-cookies.txt \
+  -X PATCH http://localhost:4000/dashboard/endpoints/ENDPOINT_ID \
+  -H "Content-Type: application/json" \
+  -d '{"status":"ARCHIVED"}'
+```
+
+Expected: the endpoint no longer appears on `/demo`, and `/demo/test-idea` returns not found.
+
+- Open the endpoint builder in the browser.
+
+```text
+http://localhost:3000/dashboard/endpoints
+```
+
+- If prompted, log in with `demo@openme.local` / `password123`.
+
+- Create `test-idea`, open its detail editor, add the long-text field and boundary above, publish it, submit from `/demo/test-idea`, then archive it.
+
+Expected: the dashboard shows loading, saving, success, and error states; reordering uses Up/Down buttons; no drag-and-drop or conditional fields are present.
+
 ## AI Service Health Checks
 
 - Install AI service dependencies if needed.
@@ -338,7 +473,7 @@ curl http://localhost:4000/public/profiles/demo
 username: demo
 displayName: Demo User
 visible links only
-endpoints including collaborate, ask-me, and feedback
+published public endpoints including collaborate, ask-me, and feedback
 ```
 
 - Open the public profile in the browser.
@@ -517,7 +652,7 @@ pnpm --filter @openme/web lint
 - Run a full manual submission flow:
 
 ```text
-/demo/collaborate -> submit form -> /login -> /dashboard/profile -> save profile -> /dashboard/links -> manage links -> /dashboard/inbox -> open detail
+/demo/collaborate -> submit form -> /login -> /dashboard/profile -> save profile -> /dashboard/links -> manage links -> /dashboard/endpoints -> manage endpoint -> /dashboard/inbox -> open detail
 ```
 
 - Confirm logged-out dashboard pages show a login prompt or redirect path.

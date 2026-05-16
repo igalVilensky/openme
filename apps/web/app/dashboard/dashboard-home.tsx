@@ -102,6 +102,12 @@ export function DashboardHome() {
       href: "/dashboard/links",
     },
     {
+      label: "Endpoints",
+      value: "Build",
+      detail: "Manage interaction endpoints",
+      href: "/dashboard/endpoints",
+    },
+    {
       label: "Inbox",
       value: "Open",
       detail: "Review owner-scoped submissions",
@@ -129,7 +135,7 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {dashboardItems.map((item) => (
           <Link
             key={item.label}

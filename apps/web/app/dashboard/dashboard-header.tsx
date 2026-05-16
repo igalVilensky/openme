@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LogoutButton } from "./logout-button";
 
 type DashboardHeaderProps = {
-  active: "dashboard" | "profile" | "links" | "inbox";
+  active: "dashboard" | "profile" | "links" | "endpoints" | "inbox";
 };
 
 const navItems: Array<{
@@ -25,6 +25,11 @@ const navItems: Array<{
     key: "links",
     href: "/dashboard/links",
     label: "Links",
+  },
+  {
+    key: "endpoints",
+    href: "/dashboard/endpoints",
+    label: "Endpoints",
   },
   {
     key: "inbox",
