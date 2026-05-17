@@ -82,12 +82,11 @@ Do not set `GROQ_API_KEY` on the API. The API calls the AI service, not Groq.
 
 ```bash
 pnpm --filter @openme/api db:generate
-pnpm --filter @openme/api exec prisma migrate deploy
+pnpm --filter @openme/api db:deploy
 ```
 
 The repository currently has a `db:migrate` script for local development using
-`prisma migrate dev`. For production, run `prisma migrate deploy` from the API
-package context or add a production migration script later.
+`prisma migrate dev`. For production, use `db:deploy`.
 
 Seed production only when intentionally creating demo data. Do not seed by
 default.

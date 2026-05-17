@@ -322,7 +322,13 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 The API requires `DATABASE_URL` and `JWT_SECRET`. Prisma migrations must run
-before API start. AI can be disabled with `AI_ENABLED=false`.
+before API start:
+
+```bash
+pnpm --filter @openme/api db:deploy
+```
+
+AI can be disabled with `AI_ENABLED=false`.
 
 ### 5. Suggested Free Hosting Layout
 
@@ -340,7 +346,7 @@ first production deploy.
 Minimum order:
 
 1. Create production Postgres.
-2. Run Prisma migrations.
+2. Run Prisma migrations with `pnpm --filter @openme/api db:deploy`.
 3. Deploy API with `AI_ENABLED=false`.
 4. Deploy web with `NEXT_PUBLIC_API_URL` pointed at the API.
 5. Test auth, public profile, endpoint submission, and inbox.
