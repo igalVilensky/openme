@@ -38,7 +38,10 @@ Step by step:
 7. `apps/api` verifies the password hash and refreshes the auth cookie.
 8. `/auth/me` reads the cookie and returns the current user/profile summary.
 
-The auth cookie is `httpOnly`, `sameSite=lax`, `path=/`, and `secure` only in production. `JWT_SECRET` is server-only and must never be exposed to `apps/web`.
+The auth cookie is `httpOnly`, `path=/`, and has no hardcoded domain.
+Local/dev uses `sameSite=lax` without `secure` so localhost auth works.
+Production uses `secure` and `sameSite=none` for common split frontend/API
+hosting. `JWT_SECRET` is server-only and must never be exposed to `apps/web`.
 
 ## Dashboard Inbox Flow
 

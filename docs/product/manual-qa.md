@@ -648,6 +648,69 @@ Expected: provider is `groq` and `groqConfigured` is `true`.
 
 Expected: analysis is created. If Groq fails or returns invalid output, the AI service falls back to mock analysis and the submission still succeeds.
 
+## Pre-Deployment QA Checklist
+
+- Build the API.
+
+```bash
+pnpm --filter @openme/api build
+```
+
+- Build the web app.
+
+```bash
+pnpm --filter @openme/web build
+```
+
+- Test local auth with the demo login.
+- Test the public profile at `/demo`.
+- Test public endpoint submission at `/demo/collaborate`.
+- Test the dashboard inbox at `/dashboard/inbox`.
+- Confirm `.env` is not committed and no real secrets are staged.
+
+### AI_ENABLED=false Test
+
+- Start the API with AI disabled.
+
+```bash
+AI_ENABLED=false pnpm --filter @openme/api dev
+```
+
+- Submit a public endpoint form.
+
+Expected: submission creation succeeds, the submission appears in the inbox, and
+the inbox detail shows no analysis or a pending/unavailable analysis state.
+
+### Production-Like Auth and Cookie Sanity Test
+
+- With the API running locally in development mode, send a credentialed login
+  request with the local frontend origin.
+
+```bash
+curl -i -c /tmp/openme-cookies.txt \
+  -H "Origin: http://localhost:3000" \
+  -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@openme.local","password":"password123"}'
+```
+
+Expected:
+
+```text
+Access-Control-Allow-Origin: http://localhost:3000
+Access-Control-Allow-Credentials: true
+Set-Cookie: openme_auth=...; Path=/; HttpOnly; SameSite=Lax
+```
+
+The local development cookie should not include `Secure`.
+
+- Before production deploy, confirm the deployed API is configured with
+  `NODE_ENV=production` and `WEB_URL` set to the deployed frontend URL.
+
+Expected: production auth cookies are HTTP-only, `Secure`, have no hardcoded
+`Domain`, and are accepted by the browser when the frontend calls the API with
+credentials.
+
 ## Regression Checklist Before Every Commit
 
 - Confirm no secrets are staged.

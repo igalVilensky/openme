@@ -2,6 +2,9 @@
 
 This document captures the state of the OpenMe MVP after completing the core loop and polishing the dashboard, homepage, navigation, and safety copy.
 
+The core MVP is complete. The project is now entering deployment preparation for
+free-tier hosting without adding paid services or new product features.
+
 ## Completed Features
 
 - Root monorepo setup with pnpm workspaces and Turbo
@@ -65,6 +68,14 @@ This document captures the state of the OpenMe MVP after completing the core loo
 - Mock AI mode is available by default.
 - Groq mode is available when `AI_PROVIDER=groq` and `GROQ_API_KEY` is configured.
 
+## Deployment Preparation Status
+
+- Free-tier deployment documentation has been added.
+- Root environment examples now separate local defaults from production values.
+- API and AI service health endpoints are available at `GET /health`.
+- Local Docker Compose Postgres development remains the default local path.
+- Provider-specific deployment manifests are intentionally not added yet.
+
 ## Temporary MVP Shortcuts
 
 - Auth is MVP email/password only. OAuth, reset flows, and email verification are not implemented.
@@ -73,7 +84,7 @@ This document captures the state of the OpenMe MVP after completing the core loo
 - Endpoint fields are simple flat fields. Conditional field logic is not implemented yet.
 - Username editing and avatar uploads are not implemented yet.
 - Legacy demo inbox routes remain available at `/dashboard/demo/inbox` for local compatibility.
-- No production deployment config yet.
+- No provider-specific production deployment config yet.
 - AI service is not protected by auth or a service token yet.
 - AI analysis is fire-and-forget, so analysis can briefly be pending; the inbox detail explains this state.
 
@@ -87,7 +98,12 @@ This document captures the state of the OpenMe MVP after completing the core loo
 - AI analysis has no retry queue.
 - AI analysis can be delayed or absent if the AI service is offline or disabled.
 - Groq responses are validated and fall back to mock, but there is no provider observability beyond server logs.
-- No rate limiting or abuse protection yet.
+- No email verification yet.
+- No password reset yet.
+- No rate limiting yet.
+- No abuse protection yet beyond basic validation.
+- AI service is not protected by a service token yet.
+- No background queue yet.
 - No production secrets management yet.
 - No production deployment manifests for web, API, AI service, or database.
 

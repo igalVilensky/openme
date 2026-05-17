@@ -8,12 +8,19 @@ export const AUTH_COOKIE_NAME = "openme_auth";
 
 const AUTH_COOKIE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7;
 
+function getAuthCookieSameSite(): CookieOptions["sameSite"] {
+  return env.nodeEnv === "production" ? "none" : "lax";
+}
+
 function getBaseCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "lax",
+    // Local/dev auth stays SameSite=Lax on localhost. Production free-tier
+    // frontend/API hosts are often split, so SameSite=None pairs with Secure.
+    sameSite: getAuthCookieSameSite(),
     secure: env.nodeEnv === "production",
+    // Intentionally no domain: localhost and deployment hosts own their cookies.
   };
 }
 

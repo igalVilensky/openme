@@ -52,6 +52,11 @@ Providers:
 apps/web never calls Groq. apps/api never calls Groq directly. apps/api calls
 apps/ai-service, and apps/ai-service is the only app that can call Groq.
 
+## Health Endpoints
+
+- `apps/api`: `GET /health`
+- `apps/ai-service`: `GET /health`
+
 ## Database
 
 PostgreSQL with Prisma.

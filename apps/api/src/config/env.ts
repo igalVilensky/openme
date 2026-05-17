@@ -21,17 +21,10 @@ function parsePort(value: string | undefined): number {
   return port;
 }
 
-function parseCorsOrigins(value: string | undefined): string | string[] {
-  const origins = value
-    ?.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+function parseWebUrl(value: string | undefined): string {
+  const webUrl = value?.trim().replace(/\/+$/, "");
 
-  if (origins?.length) {
-    return origins.length === 1 ? origins[0] : origins;
-  }
-
-  return process.env.WEB_URL ?? "http://localhost:3000";
+  return webUrl || "http://localhost:3000";
 }
 
 function parseDatabaseUrl(value: string | undefined): string {
@@ -74,7 +67,7 @@ function parseJwtSecret(value: string | undefined): string {
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: parsePort(process.env.PORT),
-  corsOrigin: parseCorsOrigins(process.env.CORS_ORIGIN),
+  webUrl: parseWebUrl(process.env.WEB_URL),
   databaseUrl: parseDatabaseUrl(process.env.DATABASE_URL),
   aiEnabled: parseBoolean(process.env.AI_ENABLED),
   aiServiceUrl: parseAiServiceUrl(process.env.AI_SERVICE_URL),

@@ -12,7 +12,9 @@ export function createApp(): Express {
 
   app.use(
     cors({
-      origin: env.corsOrigin,
+      // WEB_URL is the single frontend origin allowed to send credentialed
+      // browser requests. Keep this aligned with the deployed Next.js URL.
+      origin: env.webUrl,
       credentials: true
     })
   );

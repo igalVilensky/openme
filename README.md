@@ -222,6 +222,142 @@ http://localhost:3000/dashboard/links
 http://localhost:3000/dashboard/endpoints
 ```
 
+## Deployment Preparation
+
+OpenMe is ready for deployment preparation, but this repository does not deploy
+anything by itself. Keep local Docker Compose development working while setting
+production values in each host's environment variable UI.
+
+### 1. Local Development
+
+Use the existing local flow for development:
+
+```bash
+pnpm install
+docker compose up -d postgres
+pnpm --filter @openme/api db:generate
+pnpm --filter @openme/api db:migrate
+pnpm --filter @openme/api db:seed
+pnpm --filter @openme/api dev
+pnpm --filter @openme/web dev
+```
+
+The AI service can stay off for local core-product testing. To test AI locally,
+start it in mock mode and run the API with `AI_ENABLED=true`.
+
+Health endpoints:
+
+```text
+apps/api: GET /health
+apps/ai-service: GET /health
+```
+
+### 2. Production Environment Variables
+
+Set production variables in the relevant service host, not in committed files.
+
+API:
+
+```bash
+NODE_ENV="production"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/openme?sslmode=require"
+WEB_URL="https://your-openme-web.vercel.app"
+API_URL="https://your-openme-api.example.com"
+JWT_SECRET="long-random-production-secret"
+AI_ENABLED="false"
+AI_SERVICE_URL="https://your-openme-ai.example.com"
+```
+
+Web:
+
+```bash
+NEXT_PUBLIC_API_URL="https://your-openme-api.example.com"
+```
+
+AI service:
+
+```bash
+AI_PROVIDER="mock"
+GROQ_API_KEY=""
+GROQ_MODEL="llama-3.3-70b-versatile"
+GROQ_API_URL="https://api.groq.com/openai/v1/chat/completions"
+```
+
+Notes:
+
+- Next.js requires `NEXT_PUBLIC_API_URL` at build time.
+- `NEXT_PUBLIC_API_URL` is safe because it is the public browser API URL.
+- `DATABASE_URL` should come from the production Postgres provider.
+- `WEB_URL` should be the deployed frontend URL and is used for API CORS.
+- `API_URL` should be the deployed API URL.
+- `AI_SERVICE_URL` should be the deployed AI service URL if AI is enabled.
+- `JWT_SECRET` must be a long random secret in production.
+- `GROQ_API_KEY` must never be exposed to the frontend.
+
+### 3. Build Commands
+
+```bash
+pnpm --filter @openme/api build
+pnpm --filter @openme/web build
+```
+
+### 4. Start Commands
+
+API:
+
+```bash
+pnpm --filter @openme/api start
+```
+
+Web:
+
+```bash
+pnpm --filter @openme/web start
+```
+
+AI service:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+The API requires `DATABASE_URL` and `JWT_SECRET`. Prisma migrations must run
+before API start. AI can be disabled with `AI_ENABLED=false`.
+
+### 5. Suggested Free Hosting Layout
+
+- `apps/web`: Vercel.
+- Database: Neon or Supabase free Postgres.
+- `apps/api`: Render, Fly.io, or a Railway-like free option.
+- `apps/ai-service`: Render, Fly.io, Hugging Face Spaces, or postpone it.
+- Groq key: set only on the AI service when using `AI_PROVIDER=groq`.
+
+### 6. Deployment Checklist
+
+Use [docs/deployment/checklist.md](docs/deployment/checklist.md) before the
+first production deploy.
+
+Minimum order:
+
+1. Create production Postgres.
+2. Run Prisma migrations.
+3. Deploy API with `AI_ENABLED=false`.
+4. Deploy web with `NEXT_PUBLIC_API_URL` pointed at the API.
+5. Test auth, public profile, endpoint submission, and inbox.
+6. Deploy AI service later if needed.
+
+### 7. Known Production Limitations
+
+- No email verification.
+- No password reset.
+- No rate limiting yet.
+- No abuse protection yet.
+- AI service is not protected by a service token yet.
+- No background queue yet.
+- Free-tier services may sleep or have low connection limits.
+- Cross-site auth cookies can be brittle on unrelated free hosting domains; use
+  same-site custom domains later if browser behavior requires it.
+
 ## Full Manual Flow
 
 Use separate terminals for long-running services.
