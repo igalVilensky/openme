@@ -33,6 +33,10 @@ free-tier hosting without adding paid services or new product features.
 - Groq AI analysis provider
 - API-to-AI-service integration when `AI_ENABLED=true`
 - AI analysis display in inbox detail when analysis exists
+- Basic in-memory rate limits for auth, public submissions, and general API traffic
+- `100kb` API JSON body limit
+- Optional `AI_SERVICE_TOKEN` protection for API-to-AI-service analysis calls
+- Production startup checks for `WEB_URL` and strong `JWT_SECRET`
 
 ## Current User Flow
 
@@ -73,6 +77,8 @@ free-tier hosting without adding paid services or new product features.
 - Free-tier deployment documentation has been added.
 - Root environment examples now separate local defaults from production values.
 - API and AI service health endpoints are available at `GET /health`.
+- Basic in-memory API rate limits and request body limits are in place.
+- AI service analysis can be protected with a shared service token when deployed.
 - Local Docker Compose Postgres development remains the default local path.
 - Provider-specific deployment manifests are intentionally not added yet.
 
@@ -85,7 +91,7 @@ free-tier hosting without adding paid services or new product features.
 - Username editing and avatar uploads are not implemented yet.
 - Legacy demo inbox routes remain available at `/dashboard/demo/inbox` for local compatibility.
 - No provider-specific production deployment config yet.
-- AI service is not protected by auth or a service token yet.
+- AI service token protection is optional and must be configured in production if the service is publicly reachable.
 - AI analysis is fire-and-forget, so analysis can briefly be pending; the inbox detail explains this state.
 
 ## Known Limitations
@@ -100,9 +106,8 @@ free-tier hosting without adding paid services or new product features.
 - Groq responses are validated and fall back to mock, but there is no provider observability beyond server logs.
 - No email verification yet.
 - No password reset yet.
-- No rate limiting yet.
-- No abuse protection yet beyond basic validation.
-- AI service is not protected by a service token yet.
+- Rate limiting is in-memory only and does not coordinate across multiple API instances.
+- No abuse protection yet beyond validation and MVP in-memory rate limits.
 - No background queue yet.
 - No production secrets management yet.
 - No production deployment manifests for web, API, AI service, or database.
@@ -112,9 +117,9 @@ free-tier hosting without adding paid services or new product features.
 - Add conditional field logic only if the core endpoint builder needs it.
 - Add username editing after deciding handle-change rules and redirects.
 - Add OAuth, password reset, and email verification when the MVP auth path is stable enough to justify them.
-- Add a service token or private network boundary for `apps/ai-service`.
+- Enable `AI_SERVICE_TOKEN` or a private network boundary for deployed `apps/ai-service`.
 - Add automated tests for public submission creation, inbox reads, and AI fallback behavior.
 - Add production deployment configuration.
-- Add rate limiting for public submission endpoints.
+- Add external or provider-level rate limiting for multi-instance production.
 - Add structured logging for API and AI service failures.
 - Add background job or retry infrastructure if AI analysis becomes more important.

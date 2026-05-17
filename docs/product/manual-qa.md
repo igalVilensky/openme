@@ -667,6 +667,8 @@ pnpm --filter @openme/web build
 - Test public endpoint submission at `/demo/collaborate`.
 - Test the dashboard inbox at `/dashboard/inbox`.
 - Confirm `.env` is not committed and no real secrets are staged.
+- Confirm large JSON bodies are rejected.
+- Confirm repeated login attempts eventually return HTTP 429.
 
 ### AI_ENABLED=false Test
 
@@ -710,6 +712,79 @@ The local development cookie should not include `Secure`.
 Expected: production auth cookies are HTTP-only, `Secure`, have no hardcoded
 `Domain`, and are accepted by the browser when the frontend calls the API with
 credentials.
+
+### Security Hardening Checks
+
+- Confirm API JSON body limit rejects oversized requests.
+
+```bash
+node -e "require('fs').writeFileSync('/tmp/openme-large-body.json', JSON.stringify({email:'demo@openme.local',password:'x'.repeat(120000)}))"
+curl -i \
+  -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  --data-binary @/tmp/openme-large-body.json
+```
+
+Expected: HTTP 413 when the JSON body is larger than `100kb`.
+
+- Confirm repeated login attempts are rate limited.
+
+```bash
+for i in $(seq 1 11); do
+  curl -s -o /dev/null -w "%{http_code}\n" \
+    -X POST http://localhost:4000/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"demo@openme.local","password":"wrong-password"}'
+done
+```
+
+Expected: an HTTP 429 response appears after repeated attempts from the same IP.
+
+- Confirm the AI service works without a token when `AI_SERVICE_TOKEN` is unset.
+
+```bash
+curl -i \
+  -X POST http://localhost:8000/analyze-submission \
+  -H "Content-Type: application/json" \
+  -d '{"profile":{"username":"demo","displayName":"Demo User"},"endpoint":{"slug":"collaborate","title":"Collaborate","boundaries":[],"fields":[]},"submission":{"id":"qa","submitterName":"QA","data":{},"message":"Hello"}}'
+```
+
+Expected: HTTP 200 in local mock mode.
+
+- Confirm the AI service rejects analysis calls without the token when
+  `AI_SERVICE_TOKEN` is set.
+
+```bash
+cd apps/ai-service
+source .venv/bin/activate
+AI_SERVICE_TOKEN="local-test-token" uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+In another terminal:
+
+```bash
+curl -i \
+  -X POST http://localhost:8000/analyze-submission \
+  -H "Content-Type: application/json" \
+  -d '{"profile":{"username":"demo"},"endpoint":{"slug":"collaborate","title":"Collaborate"},"submission":{"id":"qa","data":{}}}'
+```
+
+Expected: HTTP 401. `GET /health` should still return HTTP 200.
+
+- Confirm the API sends the token when AI is enabled.
+
+```bash
+cd ~/Projects/openme
+AI_ENABLED=true \
+AI_SERVICE_URL=http://localhost:8000 \
+AI_SERVICE_TOKEN="local-test-token" \
+pnpm --filter @openme/api dev
+```
+
+Submit a public form and open the inbox detail.
+
+Expected: the submission succeeds and analysis appears when the AI service is
+running with the same token.
 
 ## Regression Checklist Before Every Commit
 

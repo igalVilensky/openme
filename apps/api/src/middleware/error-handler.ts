@@ -11,11 +11,56 @@ type ErrorResponse = {
   };
 };
 
+type HttpLikeError = Error & {
+  status?: unknown;
+  statusCode?: unknown;
+  expose?: unknown;
+  type?: unknown;
+};
+
+function isHttpLikeError(error: unknown): error is HttpLikeError {
+  return typeof error === "object" && error !== null;
+}
+
+function getHttpLikeStatusCode(error: HttpLikeError): number | null {
+  const statusCode = error.statusCode ?? error.status;
+
+  return typeof statusCode === "number" && statusCode >= 400 && statusCode < 600
+    ? statusCode
+    : null;
+}
+
+function getStatusCode(error: unknown): number {
+  if (error instanceof HttpError) {
+    return error.statusCode;
+  }
+
+  return isHttpLikeError(error) ? (getHttpLikeStatusCode(error) ?? 500) : 500;
+}
+
+function getErrorMessage(error: unknown, statusCode: number): string {
+  if (error instanceof HttpError) {
+    return error.expose ? error.message : "Internal server error";
+  }
+
+  if (statusCode === 413) {
+    return "Request body is too large";
+  }
+
+  if (
+    isHttpLikeError(error) &&
+    error.expose === true &&
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return "Internal server error";
+}
+
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
-  const statusCode = error instanceof HttpError ? error.statusCode : 500;
-  const shouldExpose = error instanceof HttpError ? error.expose : false;
-  const message =
-    shouldExpose && error instanceof Error ? error.message : "Internal server error";
+  const statusCode = getStatusCode(error);
+  const message = getErrorMessage(error, statusCode);
 
   if (statusCode >= 500) {
     console.error(error);

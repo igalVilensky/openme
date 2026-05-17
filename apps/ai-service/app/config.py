@@ -14,6 +14,7 @@ def _clean(value: str | None, default: str) -> str:
 @dataclass(frozen=True)
 class Settings:
     ai_provider: str = _clean(os.getenv("AI_PROVIDER"), "mock").lower()
+    ai_service_token: str = _clean(os.getenv("AI_SERVICE_TOKEN"), "")
     groq_api_key: str = _clean(os.getenv("GROQ_API_KEY"), "")
     groq_model: str = _clean(
         os.getenv("GROQ_MODEL"), "llama-3.3-70b-versatile"

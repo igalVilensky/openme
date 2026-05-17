@@ -51,6 +51,9 @@ Providers:
 
 apps/web never calls Groq. apps/api never calls Groq directly. apps/api calls
 apps/ai-service, and apps/ai-service is the only app that can call Groq.
+When `AI_SERVICE_TOKEN` is set on both services, `apps/api` sends it as
+`X-OpenMe-AI-Token` and `apps/ai-service` requires it for
+`/analyze-submission`. The AI health endpoint remains public.
 
 ## Health Endpoints
 
@@ -82,3 +85,5 @@ Main entities:
 - AI must be optional.
 - If AI fails, submissions must still be saved.
 - Failed AI analysis must never block public submission creation.
+- MVP in-memory rate limiting is acceptable for the first single-instance deploy,
+  but higher-scale production should add provider-level or external throttling.

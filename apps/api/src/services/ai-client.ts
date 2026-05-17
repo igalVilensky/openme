@@ -106,13 +106,18 @@ export async function analyzeSubmissionWithAiService(
 ): Promise<AnalyzeSubmissionResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+
+  if (env.aiServiceToken) {
+    headers["X-OpenMe-AI-Token"] = env.aiServiceToken;
+  }
 
   try {
     const response = await fetch(`${env.aiServiceUrl}/analyze-submission`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers,
       body: JSON.stringify(payload),
       signal: controller.signal
     });

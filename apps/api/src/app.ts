@@ -5,7 +5,10 @@ import type { Express } from "express";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
+import { createRateLimit } from "./middleware/rate-limit";
 import { apiRouter } from "./routes";
+
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 export function createApp(): Express {
   const app = express();
@@ -18,7 +21,14 @@ export function createApp(): Express {
       credentials: true
     })
   );
-  app.use(express.json());
+  app.use(
+    createRateLimit({
+      bucket: "general-api",
+      maxRequests: 300,
+      windowMs: FIFTEEN_MINUTES_MS,
+    }),
+  );
+  app.use(express.json({ limit: "100kb" }));
 
   app.use(apiRouter);
   app.use(notFoundHandler);

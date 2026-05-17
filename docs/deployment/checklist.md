@@ -13,6 +13,8 @@ Use this checklist before deploying OpenMe to free-tier services.
 - [ ] Test the dashboard inbox.
 - [ ] Test `AI_ENABLED=false` mode.
 - [ ] Test `AI_ENABLED=true` mode if deploying the AI service.
+- [ ] Test large JSON body rejection.
+- [ ] Test repeated login attempts eventually return HTTP 429.
 
 ## Database
 
@@ -24,9 +26,13 @@ Use this checklist before deploying OpenMe to free-tier services.
 ## Secrets
 
 - [ ] Set `JWT_SECRET` to a long random production secret on the API service.
+- [ ] Confirm `JWT_SECRET` is not the placeholder and is at least 32 characters.
+- [ ] Set `AI_SERVICE_TOKEN` on API and AI service if deploying AI service.
 - [ ] Set `GROQ_API_KEY` only on the AI service.
 - [ ] Confirm `.env` is not committed.
 - [ ] Confirm production secrets are not present in frontend public env vars.
+- [ ] Confirm `AI_SERVICE_TOKEN`, `JWT_SECRET`, and `GROQ_API_KEY` are not
+  exposed to `apps/web`.
 
 ## Frontend
 
@@ -43,13 +49,19 @@ Use this checklist before deploying OpenMe to free-tier services.
 - [ ] Set `JWT_SECRET`.
 - [ ] Set `AI_ENABLED`.
 - [ ] Set `AI_SERVICE_URL` if AI is enabled.
+- [ ] Set `AI_SERVICE_TOKEN` if AI service token protection is enabled.
 - [ ] Test `GET /health`.
+- [ ] Confirm auth route rate limiting returns HTTP 429 after repeated attempts.
 
 ## AI Service
 
 - [ ] Set `AI_PROVIDER=mock` or `AI_PROVIDER=groq`.
+- [ ] Set `AI_SERVICE_TOKEN` if the AI service is publicly reachable.
 - [ ] Set `GROQ_API_KEY` only if using `AI_PROVIDER=groq`.
 - [ ] Test `GET /health`.
+- [ ] If `AI_SERVICE_TOKEN` is set, confirm `/analyze-submission` returns HTTP
+  401 without `X-OpenMe-AI-Token`.
+- [ ] Confirm API-to-AI analysis succeeds when the API has the matching token.
 
 ## Production Smoke Test
 
@@ -61,3 +73,5 @@ Use this checklist before deploying OpenMe to free-tier services.
 - [ ] Confirm AI analysis is absent but non-blocking when `AI_ENABLED=false`.
 - [ ] Confirm AI analysis appears when `AI_ENABLED=true` and the AI service is
   deployed.
+- [ ] Confirm public submission rate limiting eventually returns HTTP 429 after
+  repeated submissions from the same IP.

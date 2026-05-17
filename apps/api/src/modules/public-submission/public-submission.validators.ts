@@ -29,6 +29,14 @@ type ValidationResult =
     };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const submitterNameMaxLength = 120;
+const emailMaxLength = 254;
+const messageMaxLength = 5000;
+const shortTextMaxLength = 300;
+const longTextMaxLength = 5000;
+const urlMaxLength = 2000;
+const multiSelectMaxItems = 12;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -37,6 +45,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseOptionalString(
   value: unknown,
   label: string,
+  maxLength: number,
   errors: string[]
 ): string | null {
   if (value === undefined || value === null || value === "") {
@@ -49,6 +58,11 @@ function parseOptionalString(
   }
 
   const trimmed = value.trim();
+
+  if (trimmed.length > maxLength) {
+    errors.push(`${label} must be ${maxLength} characters or fewer`);
+    return null;
+  }
 
   return trimmed ? trimmed : null;
 }
@@ -70,7 +84,7 @@ function isPresent(value: unknown): boolean {
 }
 
 function isValidEmail(value: string): boolean {
-  return emailPattern.test(value);
+  return value.length <= emailMaxLength && emailPattern.test(value);
 }
 
 function isValidUrl(value: string): boolean {
@@ -83,7 +97,13 @@ function isValidUrl(value: string): boolean {
 }
 
 function isValidDateString(value: string): boolean {
-  return !Number.isNaN(Date.parse(value));
+  if (!datePattern.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 function asOptionText(value: Prisma.JsonValue): string | null {
@@ -143,6 +163,7 @@ function getOptionTexts(options: Prisma.JsonValue | null): string[] {
 function addStringField(
   field: PublicSubmissionField,
   value: unknown,
+  maxLength: number,
   data: Record<string, Prisma.InputJsonValue>,
   errors: string[]
 ): void {
@@ -151,7 +172,14 @@ function addStringField(
     return;
   }
 
-  data[field.id] = value.trim();
+  const trimmed = value.trim();
+
+  if (trimmed.length > maxLength) {
+    errors.push(`${field.label} must be ${maxLength} characters or fewer`);
+    return;
+  }
+
+  data[field.id] = trimmed;
 }
 
 function validateFieldValue(
@@ -162,8 +190,10 @@ function validateFieldValue(
 ): void {
   switch (field.type) {
     case "SHORT_TEXT":
+      addStringField(field, value, shortTextMaxLength, data, errors);
+      return;
     case "LONG_TEXT":
-      addStringField(field, value, data, errors);
+      addStringField(field, value, longTextMaxLength, data, errors);
       return;
     case "EMAIL":
       if (typeof value !== "string") {
@@ -171,12 +201,14 @@ function validateFieldValue(
         return;
       }
 
-      if (!isValidEmail(value.trim())) {
+      const email = value.trim();
+
+      if (!isValidEmail(email)) {
         errors.push(`${field.label} must be a valid email address`);
         return;
       }
 
-      data[field.id] = value.trim();
+      data[field.id] = email;
       return;
     case "URL":
       if (typeof value !== "string") {
@@ -184,12 +216,19 @@ function validateFieldValue(
         return;
       }
 
-      if (!isValidUrl(value.trim())) {
+      const url = value.trim();
+
+      if (url.length > urlMaxLength) {
+        errors.push(`${field.label} must be ${urlMaxLength} characters or fewer`);
+        return;
+      }
+
+      if (!isValidUrl(url)) {
         errors.push(`${field.label} must be a valid URL`);
         return;
       }
 
-      data[field.id] = value.trim();
+      data[field.id] = url;
       return;
     case "DATE":
       if (typeof value !== "string") {
@@ -197,12 +236,14 @@ function validateFieldValue(
         return;
       }
 
-      if (!isValidDateString(value.trim())) {
-        errors.push(`${field.label} must be a valid date string`);
+      const date = value.trim();
+
+      if (!isValidDateString(date)) {
+        errors.push(`${field.label} must be a valid YYYY-MM-DD date`);
         return;
       }
 
-      data[field.id] = value.trim();
+      data[field.id] = date;
       return;
     case "RATING":
       if (
@@ -226,7 +267,12 @@ function validateFieldValue(
       const selected = value.trim();
       const options = getOptionTexts(field.options);
 
-      if (options.length > 0 && !options.includes(selected)) {
+      if (!options.length) {
+        errors.push(`${field.label} does not have configured options`);
+        return;
+      }
+
+      if (!options.includes(selected)) {
         errors.push(`${field.label} must match one of: ${options.join(", ")}`);
         return;
       }
@@ -240,9 +286,16 @@ function validateFieldValue(
         return;
       }
 
-      const selected = value.map((item) =>
-        typeof item === "string" ? item.trim() : item
-      );
+      if (value.length > multiSelectMaxItems) {
+        errors.push(
+          `${field.label} must include ${multiSelectMaxItems} options or fewer`
+        );
+        return;
+      }
+
+      const selected = value.map((item) => {
+        return typeof item === "string" ? item.trim() : "";
+      });
 
       if (!selected.every((item) => typeof item === "string" && item)) {
         errors.push(`${field.label} must contain only non-empty strings`);
@@ -250,10 +303,13 @@ function validateFieldValue(
       }
 
       const options = getOptionTexts(field.options);
-      const invalidOption =
-        options.length > 0
-          ? selected.find((item) => !options.includes(String(item)))
-          : undefined;
+
+      if (!options.length) {
+        errors.push(`${field.label} does not have configured options`);
+        return;
+      }
+
+      const invalidOption = selected.find((item) => !options.includes(item));
 
       if (invalidOption) {
         errors.push(`${field.label} contains an unsupported option`);
@@ -284,14 +340,21 @@ export function validatePublicSubmissionBody(
   const submitterName = parseOptionalString(
     body.submitterName,
     "submitterName",
+    submitterNameMaxLength,
     errors
   );
   const submitterEmail = parseOptionalString(
     body.submitterEmail,
     "submitterEmail",
+    emailMaxLength,
     errors
   );
-  const message = parseOptionalString(body.message, "message", errors);
+  const message = parseOptionalString(
+    body.message,
+    "message",
+    messageMaxLength,
+    errors
+  );
 
   if (submitterEmail && !isValidEmail(submitterEmail)) {
     errors.push("submitterEmail must be a valid email address");

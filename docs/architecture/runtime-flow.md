@@ -17,9 +17,14 @@ Step by step:
 5. `apps/api` validates the payload against the endpoint fields.
 6. `apps/api` writes a `Submission` row to PostgreSQL.
 7. If `AI_ENABLED=true`, `apps/api` sends analysis input to `apps/ai-service`.
+   If `AI_SERVICE_TOKEN` is configured, the API includes
+   `X-OpenMe-AI-Token`.
 8. `apps/ai-service` analyzes with the configured provider.
 9. `apps/api` stores the result in `SubmissionAnalysis`.
 10. An authenticated owner dashboard reads submissions and analysis from PostgreSQL.
+
+Public submission requests are limited per IP with MVP in-memory rate limiting,
+and API JSON bodies are limited to `100kb`.
 
 ## Auth Flow
 
@@ -42,6 +47,10 @@ The auth cookie is `httpOnly`, `path=/`, and has no hardcoded domain.
 Local/dev uses `sameSite=lax` without `secure` so localhost auth works.
 Production uses `secure` and `sameSite=none` for common split frontend/API
 hosting. `JWT_SECRET` is server-only and must never be exposed to `apps/web`.
+In production, API startup fails if `JWT_SECRET` is missing, still set to the
+placeholder, or shorter than 32 characters.
+Login and registration requests are limited per IP with MVP in-memory rate
+limiting.
 
 ## Dashboard Inbox Flow
 
@@ -103,6 +112,10 @@ If the AI service is offline, returns an error, times out, or returns invalid da
 - `SubmissionAnalysis` may be missing for that submission.
 
 AI analysis is currently fire-and-forget, so even successful analysis can briefly be pending.
+
+If `AI_SERVICE_TOKEN` is set on `apps/ai-service`, `/analyze-submission`
+returns HTTP 401 unless the request includes the matching `X-OpenMe-AI-Token`
+header. `GET /health` stays public for hosting health checks.
 
 ## Provider Behavior
 

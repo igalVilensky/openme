@@ -63,12 +63,16 @@ this service entirely.
 - `JWT_SECRET`: long random production secret.
 - `AI_ENABLED=false` for the first deploy, or `true` if the AI service is live.
 - `AI_SERVICE_URL`: deployed AI service URL when `AI_ENABLED=true`.
+- `AI_SERVICE_TOKEN`: optional shared secret for API-to-AI-service requests.
 
 Do not set `GROQ_API_KEY` on the API. The API calls the AI service, not Groq.
+If the AI service is deployed publicly, set the same `AI_SERVICE_TOKEN` on the
+API and AI service. Never expose this token to `apps/web`.
 
 ### AI Service
 
 - `AI_PROVIDER=mock` or `AI_PROVIDER=groq`
+- `AI_SERVICE_TOKEN`: same token as the API when token protection is enabled
 - `GROQ_API_KEY`: set only when `AI_PROVIDER=groq`
 - `GROQ_MODEL`
 - `GROQ_API_URL`
@@ -94,6 +98,7 @@ default.
 ## CORS and Cookie Notes
 
 - The API allows credentialed browser requests from `WEB_URL`.
+- Production API startup fails if `WEB_URL` is missing or set to wildcard.
 - The auth cookie is HTTP-only and has no hardcoded domain.
 - Local/dev cookies use `SameSite=Lax` and are not `Secure`, so localhost auth
   keeps working.
@@ -108,7 +113,22 @@ default.
 - Start with `AI_ENABLED=false` to deploy the core product first.
 - Use `AI_PROVIDER=mock` to verify API-to-AI integration without Groq.
 - Use `AI_PROVIDER=groq` only after setting `GROQ_API_KEY` on the AI service.
+- Set the same `AI_SERVICE_TOKEN` on `apps/api` and `apps/ai-service` if the AI
+  service is deployed. `/analyze-submission` then requires
+  `X-OpenMe-AI-Token`, while `GET /health` remains public.
 - Keep Groq secrets away from `apps/web`, Vercel public env vars, and client logs.
+
+## MVP Security Hardening
+
+- API JSON request bodies are limited to `100kb`.
+- Auth login/register routes are limited to 10 requests per 15 minutes per IP.
+- Public submission creation is limited to 20 requests per 15 minutes per IP.
+- General API traffic is limited to 300 requests per 15 minutes per IP.
+- `JWT_SECRET` must be set, changed from the placeholder, and at least 32
+  characters when `NODE_ENV=production`.
+- Rate limiting is in-memory and only protects a single API process. For
+  multi-instance or higher-scale production, add provider firewall rules,
+  gateway-level throttling, or an external rate limiter later.
 
 ## What To Deploy First
 
@@ -124,8 +144,8 @@ default.
 - Groq integration.
 - Email verification.
 - Password reset.
-- Rate limiting.
-- Abuse protection.
+- External or distributed rate limiting.
+- Abuse protection beyond validation and MVP in-memory rate limits.
 - Background queue or retry system.
 - Provider-specific Docker or infrastructure manifests.
 
@@ -135,7 +155,9 @@ default.
 - Database storage, connection, and compute limits are small.
 - Cross-site cookie behavior can vary across browsers and provider domains.
 - Free services may rotate URLs or require manual restarts.
-- There is no rate limiting or abuse protection yet.
-- The AI service is not protected by a service token yet.
+- In-memory API rate limiting does not coordinate across multiple instances.
+- Abuse protection is still basic and should be revisited before a larger launch.
+- AI service token protection must be enabled with `AI_SERVICE_TOKEN` if the AI
+  service is publicly reachable.
 - Fire-and-forget AI analysis can be delayed or missing if the AI service is
   offline.

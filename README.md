@@ -26,6 +26,8 @@ The current MVP core loop is complete: a user can shape a public profile, add li
 - Optional AI analysis with summary, intent, boundary status, priority, and suggested reply
 - AI service mock mode by default
 - Groq provider support when configured
+- Basic in-memory rate limits on auth, public submission, and general API routes
+- Optional shared token protection for API-to-AI-service calls
 
 If AI analysis fails or is still pending, the public submission still succeeds and the inbox can be refreshed later.
 
@@ -66,7 +68,7 @@ Create a local `.env` from the example:
 cp .env.example .env
 ```
 
-Do not commit `.env`. `GROQ_API_KEY` and `JWT_SECRET` must stay private and must never be exposed to the frontend.
+Do not commit `.env`. `GROQ_API_KEY`, `JWT_SECRET`, and `AI_SERVICE_TOKEN` must stay private and must never be exposed to the frontend.
 
 Required variables:
 
@@ -80,6 +82,7 @@ NEXT_PUBLIC_API_URL="http://localhost:4000"
 
 AI_ENABLED="false"
 AI_SERVICE_URL="http://localhost:8000"
+AI_SERVICE_TOKEN=""
 
 AI_PROVIDER="mock"
 GROQ_API_KEY=""
@@ -94,6 +97,7 @@ AI notes:
 - `AI_PROVIDER=mock` is the default and does not use any paid API.
 - `AI_PROVIDER=groq` requires `GROQ_API_KEY`.
 - `AI_ENABLED=true` enables `apps/api` to call `apps/ai-service` after a public submission is created.
+- `AI_SERVICE_TOKEN` is optional locally. If the AI service is deployed publicly, set the same token on `apps/api` and `apps/ai-service`.
 - Failed AI analysis is logged but never blocks submission creation.
 
 ## Install Dependencies
@@ -263,9 +267,10 @@ NODE_ENV="production"
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/openme?sslmode=require"
 WEB_URL="https://your-openme-web.vercel.app"
 API_URL="https://your-openme-api.example.com"
-JWT_SECRET="long-random-production-secret"
+JWT_SECRET="long-random-production-secret-at-least-32-chars"
 AI_ENABLED="false"
 AI_SERVICE_URL="https://your-openme-ai.example.com"
+AI_SERVICE_TOKEN="long-random-ai-service-token"
 ```
 
 Web:
@@ -278,6 +283,7 @@ AI service:
 
 ```bash
 AI_PROVIDER="mock"
+AI_SERVICE_TOKEN="long-random-ai-service-token"
 GROQ_API_KEY=""
 GROQ_MODEL="llama-3.3-70b-versatile"
 GROQ_API_URL="https://api.groq.com/openai/v1/chat/completions"
@@ -291,8 +297,18 @@ Notes:
 - `WEB_URL` should be the deployed frontend URL and is used for API CORS.
 - `API_URL` should be the deployed API URL.
 - `AI_SERVICE_URL` should be the deployed AI service URL if AI is enabled.
-- `JWT_SECRET` must be a long random secret in production.
+- `AI_SERVICE_TOKEN` should match between API and AI service if the AI service is deployed. It must never be exposed to the frontend.
+- `JWT_SECRET` must be a long random secret in production. The API fails fast in production if it is missing, still set to the placeholder, or shorter than 32 characters.
 - `GROQ_API_KEY` must never be exposed to the frontend.
+
+Security notes:
+
+- The API JSON body limit is `100kb`.
+- Auth routes are limited to 10 requests per 15 minutes per IP.
+- Public submissions are limited to 20 requests per 15 minutes per IP.
+- General API traffic is limited to 300 requests per 15 minutes per IP.
+- Rate limiting is in-memory MVP protection. For multi-instance or higher-scale production, add provider firewall rules or external rate limiting later.
+- AI service `GET /health` remains public even when `AI_SERVICE_TOKEN` protects `/analyze-submission`.
 
 ### 3. Build Commands
 
@@ -356,9 +372,9 @@ Minimum order:
 
 - No email verification.
 - No password reset.
-- No rate limiting yet.
-- No abuse protection yet.
-- AI service is not protected by a service token yet.
+- Rate limiting is in-memory only and does not coordinate across multiple API instances.
+- No abuse protection beyond basic validation and MVP rate limits yet.
+- AI service token protection is optional and should be enabled if the AI service is publicly reachable.
 - No background queue yet.
 - Free-tier services may sleep or have low connection limits.
 - Cross-site auth cookies can be brittle on unrelated free hosting domains; use
