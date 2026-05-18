@@ -23,7 +23,34 @@ Deploy `apps/web` as the Next.js app.
 - Required public env: `NEXT_PUBLIC_API_URL`
 
 `NEXT_PUBLIC_API_URL` is baked into the browser bundle at build time. Set it to
-the deployed API URL before building.
+the deployed API URL before building, including the full `https://` scheme.
+
+Vercel settings that worked:
+
+- Root Directory: `apps/web`
+- Framework Preset: Next.js
+- Install command:
+
+```bash
+cd ../.. && corepack prepare pnpm@9.0.0 --activate && pnpm install --frozen-lockfile --prod=false
+```
+
+- Build command:
+
+```bash
+cd ../.. && pnpm --filter @openme/web build
+```
+
+- Output Directory: `.next`
+- Required env:
+
+```bash
+NEXT_PUBLIC_API_URL="https://openme-api.onrender.com"
+```
+
+Do not set Output Directory to `apps/web/.next` when Root Directory is
+`apps/web`. After Vercel gives the production URL, update Render `WEB_URL` to
+that exact URL and redeploy/restart the API.
 
 ### API
 
@@ -35,6 +62,39 @@ Deploy `apps/api` as the Express service.
 
 Run Prisma migrations against the production database before starting or
 restarting the API.
+
+Render settings that worked:
+
+- Service type: Web Service
+- Runtime: Node
+- Repo root: repository root
+- Build command:
+
+```bash
+corepack prepare pnpm@9.0.0 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @openme/api db:generate && pnpm --filter @openme/api build
+```
+
+- Start command:
+
+```bash
+pnpm --filter @openme/api db:deploy && pnpm --filter @openme/api start
+```
+
+- Required env:
+
+```bash
+NODE_ENV="production"
+DATABASE_URL="<Neon connection string>"
+WEB_URL="<Vercel production URL>"
+API_URL="<Render API URL>"
+JWT_SECRET="<long 32+ char secret>"
+AI_ENABLED="false"
+```
+
+Do not use `corepack enable` on Render because the filesystem can be read-only.
+Use `--prod=false` during Render build because Prisma CLI is currently a
+devDependency. The API has no root route, so `/` may return 404; use `/health`
+as the API test route.
 
 ### AI Service
 

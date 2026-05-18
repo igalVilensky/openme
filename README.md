@@ -354,7 +354,80 @@ AI can be disabled with `AI_ENABLED=false`.
 - `apps/ai-service`: Render, Fly.io, Hugging Face Spaces, or postpone it.
 - Groq key: set only on the AI service when using `AI_PROVIDER=groq`.
 
-### 6. Deployment Checklist
+### 6. Actual Free-Tier Deployment Notes
+
+The first production deployment used Neon for Postgres, Render for `apps/api`,
+Vercel for `apps/web`, and `AI_ENABLED=false`.
+
+Render API:
+
+- Service type: Web Service
+- Runtime: Node
+- Repo root: repository root
+- Build command:
+
+```bash
+corepack prepare pnpm@9.0.0 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @openme/api db:generate && pnpm --filter @openme/api build
+```
+
+- Start command:
+
+```bash
+pnpm --filter @openme/api db:deploy && pnpm --filter @openme/api start
+```
+
+- Required env:
+
+```bash
+NODE_ENV="production"
+DATABASE_URL="<Neon connection string>"
+WEB_URL="<Vercel production URL>"
+API_URL="<Render API URL>"
+JWT_SECRET="<long 32+ char secret>"
+AI_ENABLED="false"
+```
+
+Render notes:
+
+- Do not use `corepack enable` on Render because the filesystem can be
+  read-only.
+- `--prod=false` is needed during Render build because Prisma CLI is currently a
+  devDependency.
+- The API has no root route, so `/` may return 404.
+- `/health` is the correct API test route.
+
+Vercel Web:
+
+- Root Directory: `apps/web`
+- Framework Preset: Next.js
+- Install command:
+
+```bash
+cd ../.. && corepack prepare pnpm@9.0.0 --activate && pnpm install --frozen-lockfile --prod=false
+```
+
+- Build command:
+
+```bash
+cd ../.. && pnpm --filter @openme/web build
+```
+
+- Output Directory: `.next`
+- Required env:
+
+```bash
+NEXT_PUBLIC_API_URL="https://openme-api.onrender.com"
+```
+
+Vercel notes:
+
+- Do not set Output Directory to `apps/web/.next` when Root Directory is
+  `apps/web`.
+- `NEXT_PUBLIC_API_URL` must include the full `https://` scheme.
+- After Vercel gives the production URL, update Render `WEB_URL` and
+  redeploy/restart the API.
+
+### 7. Deployment Checklist
 
 Use [docs/deployment/checklist.md](docs/deployment/checklist.md) before the
 first production deploy.
@@ -368,7 +441,7 @@ Minimum order:
 5. Test auth, public profile, endpoint submission, and inbox.
 6. Deploy AI service later if needed.
 
-### 7. Known Production Limitations
+### 8. Known Production Limitations
 
 - No email verification.
 - No password reset.

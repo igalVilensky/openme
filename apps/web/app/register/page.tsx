@@ -105,8 +105,9 @@ export default function RegisterPage() {
                   id="username"
                   autoComplete="username"
                   className="mt-2 w-full rounded-md border border-[var(--line)] bg-[#fbfaf7] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]"
-                  pattern="[a-z0-9-]{3,30}"
+                  pattern="[a-z0-9\\-]{3,30}"
                   required
+                  title="Use 3-30 lowercase letters, numbers, or hyphens."
                   type="text"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}

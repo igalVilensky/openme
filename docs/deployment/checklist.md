@@ -37,6 +37,9 @@ Use this checklist before deploying OpenMe to free-tier services.
 ## Frontend
 
 - [ ] Set `NEXT_PUBLIC_API_URL` to the production API URL.
+- [ ] Confirm `NEXT_PUBLIC_API_URL` starts with `https://`.
+- [ ] Confirm Vercel Output Directory is `.next` when Root Directory is
+  `apps/web`.
 - [ ] Build and deploy `apps/web`.
 - [ ] Test `/`.
 - [ ] Test `/login`.
@@ -50,7 +53,12 @@ Use this checklist before deploying OpenMe to free-tier services.
 - [ ] Set `AI_ENABLED`.
 - [ ] Set `AI_SERVICE_URL` if AI is enabled.
 - [ ] Set `AI_SERVICE_TOKEN` if AI service token protection is enabled.
+- [ ] Confirm the Render build command does not include `corepack enable`.
+- [ ] Confirm the Render install command uses `--prod=false`.
+- [ ] Confirm Render `WEB_URL` exactly matches the deployed Vercel production
+  URL.
 - [ ] Test `GET /health`.
+- [ ] Confirm the API `/health` route works.
 - [ ] Confirm auth route rate limiting returns HTTP 429 after repeated attempts.
 
 ## AI Service
@@ -66,6 +74,7 @@ Use this checklist before deploying OpenMe to free-tier services.
 ## Production Smoke Test
 
 - [ ] Register or log in.
+- [ ] Confirm registration works after Render `WEB_URL` is updated.
 - [ ] Confirm the auth cookie is set and dashboard requests include it.
 - [ ] Open the public profile.
 - [ ] Submit a public endpoint form.
